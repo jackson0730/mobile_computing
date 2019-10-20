@@ -1,10 +1,18 @@
 package com.example.mobile;
 
 import android.Manifest;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -21,8 +29,14 @@ import androidx.core.content.ContextCompat;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -32,6 +46,9 @@ public class MainActivity extends AppCompatActivity {
     private boolean locationPermissionGranted;
     LocationCallback locationCallback;
     LocationRequest request;
+    private RequestQueue queue;
+
+    private Button pictureButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,8 +66,20 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // If picture button is clicked, show picture pop up
+        pictureButton = findViewById(R.id.picture);
+        pictureButton.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        picturePopUp();
+                    }
+                }
+        );
+
         client = LocationServices.getFusedLocationProviderClient(this);
         locationPermissionGranted = false;
+        queue = Volley.newRequestQueue(this);
 
         // Get location permission
         getLocationPermission();
@@ -137,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onLocationResult(LocationResult locationResult) {
                         Location location = locationResult.getLastLocation();
                         if (location != null) {
-                            // CHECK LOCATION AND SEND "CHECKIN"
+                            // CHECK LOCATION AND SEND "checkin"
                             TextView textView = findViewById(R.id.location);
                             textView.setText("latitude: " + location.getLatitude() +
                                     "\n longitude: " + location.getLongitude());
@@ -148,5 +177,61 @@ public class MainActivity extends AppCompatActivity {
         } catch (SecurityException e) {
             e.printStackTrace();
         }
+    }
+
+    /*
+     Pop up to request a picture
+     */
+    private void picturePopUp() {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle("Request a picture")
+                .setMessage("Would you like to request a picture of the whiteboard?");
+
+        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                // SEND "askhelp"
+                String url = "GET URL";
+
+                Map<String, String> params = new HashMap<>();
+                params.put("id", "1"); // ADD ID OF USER
+                params.put("type", "ask_picture");
+                JSONObject jsonParams = new JSONObject(params);
+
+                JsonObjectRequest postRequest = new JsonObjectRequest
+                        (Request.Method.POST, url, jsonParams, new Response.Listener<JSONObject>() {
+
+                            @Override
+                            public void onResponse(JSONObject response) {
+                                // RECEIVE JSON OBJECT
+                                Toast receive = Toast.makeText(MainActivity.this,
+                                        "Request has been received!", Toast.LENGTH_LONG);
+                                receive.show();
+                            }
+                        }, new Response.ErrorListener() {
+
+                            @Override
+                            public void onErrorResponse(VolleyError e) {
+                                e.getStackTrace();
+                                Toast error = Toast.makeText(MainActivity.this,
+                                        "Can't send request to get picture", Toast.LENGTH_LONG);
+                                error.show();
+                            }
+                        });
+
+                queue.add(postRequest);
+            }
+        });
+
+        builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.dismiss();
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 }
