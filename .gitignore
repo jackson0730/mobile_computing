@@ -24,3 +24,6 @@ hs_err_pid*
 
 # ignore __pycache__ folder
 **/__pycache__/
+
+**.idea/
+**/.DS_Store
