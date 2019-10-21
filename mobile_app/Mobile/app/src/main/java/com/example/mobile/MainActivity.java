@@ -2,8 +2,12 @@ package com.example.mobile;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.os.Bundle;
 
@@ -24,31 +28,39 @@ import com.google.android.material.snackbar.Snackbar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
+import android.provider.MediaStore;
+import android.util.Base64;
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int LOCATION_REQUEST_CODE = 1;
+    private static final int ALL_PERMISSIONS_CODE = 1;
+    private static final int REQUEST_IMAGE_CAPTURE = 100;
 
     private FusedLocationProviderClient client;
-    private boolean locationPermissionGranted;
+    private boolean permissionsGranted;
     LocationCallback locationCallback;
     LocationRequest request;
     private RequestQueue queue;
+    private String currentPhotoPath;
 
-    private Button pictureButton;
+    private Button pictureRequestButton;
+    private Button helpRequestButton;
+    private ImageView picture;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,26 +78,40 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // If picture button is clicked, show picture pop up
-        pictureButton = findViewById(R.id.picture);
-        pictureButton.setOnClickListener(
+        // If picture request button is clicked, show picture request pop up
+        pictureRequestButton = findViewById(R.id.pictureRequest);
+        pictureRequestButton.setOnClickListener(
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        picturePopUp();
+                        pictureRequestPopUp();
                     }
                 }
         );
 
+        // If help request button is clicked (button only used for testing), show help request pop up
+        helpRequestButton = findViewById(R.id.helpRequest);
+        helpRequestButton.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        helpRequestPopUp();
+                    }
+                }
+        );
+
+        picture = findViewById(R.id.picture);
+
         client = LocationServices.getFusedLocationProviderClient(this);
-        locationPermissionGranted = false;
+        permissionsGranted = false;
         queue = Volley.newRequestQueue(this);
 
-        // Get location permission
-        getLocationPermission();
+        // Get permissions
+        getPermissions();
 
         // checks location periodically and sends "checkin"
-        checkLocation();
+        client.getLastLocation();
+        checkAttendance();
     }
 
     @Override
@@ -113,18 +139,34 @@ public class MainActivity extends AppCompatActivity {
     /*
     Get location permission for device
      */
-    private void getLocationPermission() {
+    private void getPermissions() {
 
-        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
 
-            locationPermissionGranted = true;
+        if (checkPermissions(this.getApplicationContext(), permissions) == true) {
+
+            permissionsGranted = true;
 
         } else {
 
             ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_REQUEST_CODE);
+                    permissions, ALL_PERMISSIONS_CODE);
         }
+    }
+
+    /*
+    check each permission
+     */
+    private boolean checkPermissions(Context context, String[] permissions) {
+        if (context != null && permissions != null) {
+            for (String permission : permissions) {
+                if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /*
@@ -134,25 +176,41 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode,
                                            String[] permissions, int[] grantResults) {
         switch (requestCode) {
-            case LOCATION_REQUEST_CODE: {
+            case ALL_PERMISSIONS_CODE:
 
                 // if permission is not granted
                 if (grantResults.length > 0
-                        && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                        && checkGrantResults(grantResults) == true) {
                     Toast exitAppToast = Toast.makeText(MainActivity.this,
-                            "Need to grant location permissions to use app", Toast.LENGTH_LONG);
+                            "Need to grant permissions to use app", Toast.LENGTH_LONG);
                     exitAppToast.show();
                     finish();
+                } else {
+                    permissionsGranted = true;
                 }
-                return;
+                break;
+        }
+    }
+
+    /*
+    check results for grantResults
+     */
+
+    private boolean checkGrantResults(int[] grantResults) {
+        if (grantResults != null) {
+            for (int result: grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    return true;
+                }
             }
         }
+        return false;
     }
 
     /*
     Requests location and sends "checkin" to server
      */
-    private void checkLocation() {
+    private void checkAttendance() {
 
         request = LocationRequest.create();
         request.setInterval(10000);
@@ -160,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
         request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         try {
-            if (locationPermissionGranted == true) {
+            if (permissionsGranted == true) {
                 client.requestLocationUpdates(request, locationCallback = new LocationCallback() {
                     @Override
                     public void onLocationResult(LocationResult locationResult) {
@@ -182,7 +240,7 @@ public class MainActivity extends AppCompatActivity {
     /*
      Pop up to request a picture
      */
-    private void picturePopUp() {
+    private void pictureRequestPopUp() {
 
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle("Request a picture")
@@ -191,36 +249,7 @@ public class MainActivity extends AppCompatActivity {
         builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-                // SEND "askhelp"
-                String url = "GET URL";
-
-                Map<String, String> params = new HashMap<>();
-                params.put("id", "1"); // ADD ID OF USER
-                params.put("type", "ask_picture");
-                JSONObject jsonParams = new JSONObject(params);
-
-                JsonObjectRequest postRequest = new JsonObjectRequest
-                        (Request.Method.POST, url, jsonParams, new Response.Listener<JSONObject>() {
-
-                            @Override
-                            public void onResponse(JSONObject response) {
-                                // RECEIVE JSON OBJECT
-                                Toast receive = Toast.makeText(MainActivity.this,
-                                        "Request has been received!", Toast.LENGTH_LONG);
-                                receive.show();
-                            }
-                        }, new Response.ErrorListener() {
-
-                            @Override
-                            public void onErrorResponse(VolleyError e) {
-                                e.getStackTrace();
-                                Toast error = Toast.makeText(MainActivity.this,
-                                        "Can't send request to get picture", Toast.LENGTH_LONG);
-                                error.show();
-                            }
-                        });
-
-                queue.add(postRequest);
+                pictureRequest();
             }
         });
 
@@ -233,5 +262,138 @@ public class MainActivity extends AppCompatActivity {
 
         AlertDialog dialog = builder.create();
         dialog.show();
+    }
+
+    /*
+    Pop up to ask user if they would like to help a classmate by taking a picture
+     */
+
+    private void helpRequestPopUp() {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle("A classmate is requesting help")
+                .setMessage("Would you like to help a classmate by taking a picture of the whiteboard?");
+
+        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                takePicture();
+            }
+        });
+
+        builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.dismiss();
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    /*
+    send askhelp request with type ask_picture
+     */
+    private void pictureRequest() {
+
+        String url = "GET URL";
+
+        Map<String, String> params = new HashMap<>();
+        params.put("id", "1"); // ADD ID OF USER
+        params.put("type", "ask_picture");
+        JSONObject jsonParams = new JSONObject(params);
+
+        JsonObjectRequest postRequest = new JsonObjectRequest
+                (Request.Method.POST, url, jsonParams, new Response.Listener<JSONObject>() {
+
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        // RECEIVE JSON OBJECT
+                        Toast receive = Toast.makeText(MainActivity.this,
+                                "Request has been received!", Toast.LENGTH_LONG);
+                        receive.show();
+                    }
+                }, new Response.ErrorListener() {
+
+                    @Override
+                    public void onErrorResponse(VolleyError e) {
+                        e.getStackTrace();
+                        Toast error = Toast.makeText(MainActivity.this,
+                                "Can't send request to get picture", Toast.LENGTH_LONG);
+                        error.show();
+                    }
+                });
+
+        queue.add(postRequest);
+    }
+
+    /*
+    Accesses camera app to take a picture and sends upload with type picture
+     */
+    private void takePicture() {
+
+        if (this.getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY) == false) {
+            Toast error = Toast.makeText(MainActivity.this,
+                    "Device has no camera!", Toast.LENGTH_LONG);
+            error.show();
+            return;
+        }
+
+        try {
+            if (permissionsGranted == true) {
+                dispatchTakePictureIntent();
+            } else {
+                Toast error = Toast.makeText(MainActivity.this,
+                        "Do not have camera and storage permissions!", Toast.LENGTH_LONG);
+                error.show();
+            }
+        } catch (SecurityException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /*
+    Open camera to take picture and save picture in a file
+     */
+    private void dispatchTakePictureIntent() {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+            Bundle extras = data.getExtras();
+            Bitmap imageBitmap = (Bitmap) extras.get("data");
+            String encodedImage = encodeImage(imageBitmap);
+            Bitmap image = decodeImage(encodedImage);
+            picture.setImageBitmap(image);
+        }
+    }
+
+    /*
+    Encode image using base64
+     */
+    private String encodeImage(Bitmap bm)
+    {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bm.compress(Bitmap.CompressFormat.JPEG,100,baos);
+        byte[] b = baos.toByteArray();
+        String encImage = Base64.encodeToString(b, Base64.DEFAULT);
+
+        return encImage;
+    }
+
+    /*
+    Decode base64 String back to image
+     */
+    private Bitmap decodeImage(String encodedImage) {
+        byte[] decodedString = Base64.decode(encodedImage, Base64.DEFAULT);
+        Bitmap decodedImage = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+        return decodedImage;
     }
 }
