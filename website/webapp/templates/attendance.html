@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Webapp Register</title>
+    <title>Webapp Attendance</title>
 
     <!-- Required meta tags -->
     <meta charset="utf-8">
@@ -51,8 +51,10 @@
 
                             <div class="header-bar-menu">
                                 <ul class="flex justify-content-center align-items-center py-2 pt-md-0">
-                                    <li><a href="register">Register</a></li>
-                                    <li><a href="login">Login</a></li>
+                                    Username
+
+                                <!-- <li><a href="register">Register</a></li>
+                                    <li><a href="login">Login</a></li> -->
                                 </ul>
                             </div><!-- .header-bar-menu -->
                         </div><!-- .col -->
@@ -101,22 +103,12 @@
                     <div class="col-12">
                         <div class="hero-content-wrap flex flex-column justify-content-center align-items-start">
                             <header class="entry-header">
-                                <h1>Register</h1>
+                                <h1>Attendance for today</h1>
                             </header>
 
                             <div class="entry-content">
                                 <br/>
-                                <form method="post">
-                                    {% csrf_token %}
-                                    <div>
-                                        <h4>Username:</h4>
-                                        <input type="text" name="username">
-                                    </div><br/>
-                                    <div>
-                                        <h4>Password:</h4>
-                                        <input type="text" name="password">
-                                    </div><br/>
-                                    <button class="btn btn-default" type="submit">submit</button>
+                                <form method="GET">
                                 </form>
                             </div>
 

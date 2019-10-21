@@ -1,7 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Webapp Register</title>
+<script type="text/javascript">
+function geoFindMe() {
+  var output = document.getElementById("out");
+
+  if (!navigator.geolocation){
+    output.innerHTML = "<p>the Geolocation API isn't supported in Your browser</p>";
+    return;
+  }
+
+  function success(position) {
+    var latitude  = position.coords.latitude;
+    var longitude = position.coords.longitude;
+
+    output.innerHTML = '<p>Latitude: ' + latitude + '° <br>Longitude: ' + longitude + '°</p>';
+  };
+
+  function error() {
+    output.innerHTML = "can not get your position";
+  };
+  output.innerHTML = "<p>Locating…</p>";
+
+  navigator.geolocation.getCurrentPosition(success, error);
+}
+</script>
+    <title>Webapp Account</title>
 
     <!-- Required meta tags -->
     <meta charset="utf-8">
@@ -51,8 +75,10 @@
 
                             <div class="header-bar-menu">
                                 <ul class="flex justify-content-center align-items-center py-2 pt-md-0">
-                                    <li><a href="register">Register</a></li>
-                                    <li><a href="login">Login</a></li>
+                                    Username
+
+                                <!-- <li><a href="register">Register</a></li>
+                                    <li><a href="login">Login</a></li> -->
                                 </ul>
                             </div><!-- .header-bar-menu -->
                         </div><!-- .col -->
@@ -101,22 +127,40 @@
                     <div class="col-12">
                         <div class="hero-content-wrap flex flex-column justify-content-center align-items-start">
                             <header class="entry-header">
-                                <h1>Register</h1>
+                                <h1>Create New Lecture</h1>
                             </header>
 
+                            <div>
+                                <form id="geocoding_form" class="form-horizontal">
+                                    <div class="form-group">
+                                        <div class="col-xs-12 col-md-6 col-md-offset-3">
+                                            <button onclick="geoFindMe()" type="button" class="find-me btn btn-info">Find My Location</button>
+                                            <div id="out"></div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+
                             <div class="entry-content">
-                                <br/>
                                 <form method="post">
                                     {% csrf_token %}
                                     <div>
-                                        <h4>Username:</h4>
-                                        <input type="text" name="username">
+                                        <h4>Latitude</h4>
+                                        <input type="latitude" name="latitude">
                                     </div><br/>
                                     <div>
-                                        <h4>Password:</h4>
-                                        <input type="text" name="password">
+                                        <h4>Longitude</h4>
+                                        <input type="longitude" name="longitude">
                                     </div><br/>
-                                    <button class="btn btn-default" type="submit">submit</button>
+                                    <div>
+                                        <h4>Date&Time</h4>
+                                        <input type="dateTime" name="dateTime">
+                                    </div><br/>
+                                    <div>
+                                        <h4>link</h4>
+                                        <input type="link" name="link">
+                                    </div><br/>
+                                    <button class="btn btn-default" type="submit">create</button>
                                 </form>
                             </div>
 

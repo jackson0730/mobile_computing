@@ -13,5 +13,8 @@ urlpatterns = [
 
     url('index', views.index),
     url('register',views.register),
+    url('login',views.login),
+    url('account',views.account),
+    url('attendance',views.attendance),
     url('',views.index),
 ]
