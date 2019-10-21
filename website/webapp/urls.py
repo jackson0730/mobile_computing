@@ -1,5 +1,7 @@
 from django.urls import path
 from . import protocols
+from django.conf.urls import url
+from . import views
 
 urlpatterns = [
     path('getLectures/', protocols.getLectures, name='getLectures'),
@@ -8,4 +10,8 @@ urlpatterns = [
     path('upload/', protocols.upload, name='upload'),
     path('help/', protocols.help, name='help'),
     path('check/', protocols.check, name='check'),
+
+    url('index', views.index),
+    url('register',views.register),
+    url('',views.index),
 ]
