@@ -42,6 +42,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -51,7 +53,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -68,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
     private RequestQueue queue;
     private String currentPhotoPath;
     private String encodedImage;
+    private JSONArray lectures;
 
     private Button pictureRequestButton;
     private Button helpRequestButton;
@@ -239,6 +244,55 @@ public class MainActivity extends AppCompatActivity {
                             TextView textView = findViewById(R.id.location);
                             textView.setText("latitude: " + location.getLatitude() +
                                     "\n longitude: " + location.getLongitude());
+/*
+                            for (int i = 0; i < lectures.length(); i++) {
+                                try {
+                                    JSONObject lecture = lectures.getJSONObject(i);
+
+                                    if (checkTime(lecture) && checkLocation(lecture, location)) {
+
+                                        String url = "http://43.240.97.26:8000/webapp/checkin";
+
+                                        Map<String, String> params = new HashMap<>();
+                                        params.put("id", "1"); // ADD ID OF USER
+                                        params.put("lectureID", lecture.getString("lectureID"));
+                                        JSONObject jsonParams = new JSONObject(params);
+
+                                        JsonObjectRequest postRequest = new JsonObjectRequest
+                                                (Request.Method.POST, url, jsonParams, new Response.Listener<JSONObject>() {
+
+                                                    @Override
+                                                    public void onResponse(JSONObject response) {
+                                                        Toast receive = Toast.makeText(MainActivity.this,
+                                                                "checkin has been received!", Toast.LENGTH_LONG);
+                                                        receive.show();
+                                                    }
+                                                }, new Response.ErrorListener() {
+
+                                                    @Override
+                                                    public void onErrorResponse(VolleyError e) {
+                                                        e.getStackTrace();
+                                                        Toast error = Toast.makeText(MainActivity.this,
+                                                                "Can't send request to checkin", Toast.LENGTH_LONG);
+                                                        error.show();
+                                                    }
+                                                })
+                                        {
+                                            @Override
+                                            public Map<String, String> getHeaders() throws AuthFailureError {
+                                                Map<String, String> headers = new HashMap<>();
+                                                headers.put("Content-Type", "application/x-www-form-urlencoded");
+
+                                                return headers;
+                                            }
+                                        };
+                                        queue.add(postRequest);
+                                    }
+
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                            }*/
                         }
                     }
                 }, null);
@@ -246,6 +300,54 @@ public class MainActivity extends AppCompatActivity {
         } catch (SecurityException e) {
             e.printStackTrace();
         }
+    }
+
+    /*
+    check if device is near a specific location
+     */
+    private boolean checkLocation(JSONObject lecture, Location location) {
+        try {
+            double currentLon = location.getLongitude();
+            double currentLan = location.getLatitude();
+            float[] distance = new float[1];
+            double lectureLon = lecture.getDouble("longitude");
+            double lectureLan = lecture.getDouble("latitude");
+            Location.distanceBetween(lectureLan, lectureLon,
+                    currentLan, currentLon, distance);
+
+            if (distance[0] < 30) {
+                return true;
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /*
+    check if current time is between specified time and 30 minutes after that and the dates are the same
+     */
+
+    private boolean checkTime(JSONObject lecture) {
+        try {
+            Date currentDate = new Date();
+            Date startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").
+                    parse(lecture.getString("dateTime"));
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(startDate);
+            cal.add(Calendar.MINUTE, 30);
+            Date endDate = cal.getTime();
+
+            if (currentDate.after(startDate) && currentDate.before(endDate)) {
+                return true;
+            }
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        } catch (ParseException e){
+            e.printStackTrace();
+        }
+        return false;
     }
 
     /*
@@ -337,13 +439,12 @@ public class MainActivity extends AppCompatActivity {
         {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
-            Map<String, String>  headers = new HashMap<>();
+            Map<String, String> headers = new HashMap<>();
             headers.put("Content-Type", "application/x-www-form-urlencoded");
 
             return headers;
             }
         };
-
             queue.add(postRequest);
     }
 
