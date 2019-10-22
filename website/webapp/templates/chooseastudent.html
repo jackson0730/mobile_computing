@@ -1,0 +1,22 @@
+<script>
+function chooseastudent()
+{
+    var request = new XMLHttpRequest();
+    var url = "http://localhost:8000/webapp/selectastudent/"
+    var lectureID = 1
+
+    request.open("POST", url, true)
+    request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    request.onreadystatechange = function () {
+
+        if (request.readyState === 4 && request.status === 200) {
+            var json = JSON.parse(request.responseText);
+            alert(json.status);
+        }
+    };
+    var data = "lectureID=1";
+    request.send(data);
+}
+</script>
+
+<button type="button" onclick="chooseastudent()">Choose a student</button>

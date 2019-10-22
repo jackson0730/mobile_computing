@@ -42,3 +42,6 @@ def account(request):
 
 def attendance(request):
 	return render(request,'attendance.html')
+
+def chooseastudent(request):
+	return render(request,'chooseastudent.html')

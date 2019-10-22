@@ -172,7 +172,7 @@ def check(request):
 
     return JsonResponse(response)
 
-def chooseAStudent(request):
+def selectAStudent(request):
     try:
         lectureID = request.POST['lectureID']
         students = Attendance.objects.filter(lectureID=lectureID)
