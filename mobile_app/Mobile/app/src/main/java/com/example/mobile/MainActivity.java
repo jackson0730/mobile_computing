@@ -6,12 +6,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -305,11 +304,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /*
-    send askhelp request with type ask_picture
+    send ask_help request with type ask_picture
      */
     private void pictureRequest() {
 
-        String url = "GET URL";
+        String url = "http://43.240.97.26:8000/webapp/askhelp";
 
         Map<String, String> params = new HashMap<>();
         params.put("id", "1"); // ADD ID OF USER
@@ -321,7 +320,6 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onResponse(JSONObject response) {
-                        // RECEIVE JSON OBJECT
                         Toast receive = Toast.makeText(MainActivity.this,
                                 "Request has been received!", Toast.LENGTH_LONG);
                         receive.show();
@@ -335,9 +333,18 @@ public class MainActivity extends AppCompatActivity {
                                 "Can't send request to get picture", Toast.LENGTH_LONG);
                         error.show();
                     }
-                });
+                })
+        {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+            Map<String, String>  headers = new HashMap<>();
+            headers.put("Content-Type", "application/x-www-form-urlencoded");
 
-        queue.add(postRequest);
+            return headers;
+            }
+        };
+
+            queue.add(postRequest);
     }
 
     /*
@@ -413,15 +420,54 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /*
+    send photo encoded in base64 to server once it is taken
+     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            Toast error = Toast.makeText(MainActivity.this,
-                    "Now encode!", Toast.LENGTH_LONG);
-            error.show();
             encodedImage = encodeImage(currentPhotoPath);
-            decodeImage(encodedImage);
+
+            String url = "http://43.240.97.26:8000/webapp/upload";
+
+            Map<String, String> params = new HashMap<>();
+            params.put("ID_to_be_helped", "2"); // ADD ID OF USER TO BE HELPED
+            params.put("id", "1"); // ADD ID OF USER
+            params.put("type", "picture");
+            params.put("data", encodedImage);
+            JSONObject jsonParams = new JSONObject(params);
+
+            JsonObjectRequest postRequest = new JsonObjectRequest
+                    (Request.Method.POST, url, jsonParams, new Response.Listener<JSONObject>() {
+
+                        @Override
+                        public void onResponse(JSONObject response) {
+                            Toast receive = Toast.makeText(MainActivity.this,
+                                    "Photo has been received by server!", Toast.LENGTH_LONG);
+                            receive.show();
+                        }
+                    }, new Response.ErrorListener() {
+
+                        @Override
+                        public void onErrorResponse(VolleyError e) {
+                            e.getStackTrace();
+                            Toast error = Toast.makeText(MainActivity.this,
+                                    "Can't send photo to server", Toast.LENGTH_LONG);
+                            error.show();
+                        }
+                    })
+            {
+                @Override
+                public Map<String, String> getHeaders() throws AuthFailureError {
+                    Map<String, String>  headers = new HashMap<String, String>();
+                    headers.put("Content-Type", "application/x-www-form-urlencoded");
+
+                    return headers;
+                }
+            };
+
+            queue.add(postRequest);
         }
     }
 
