@@ -27,7 +27,7 @@ def register(request):
 			new_user.password=password
 			new_user.save()
 			message="Registration is successful! You can login now."
-			return redirect('http://127.0.0.1:8000/webapp/login')
+			return redirect('/webapp/login')
 
 	return render(request, 'register.html')
 
@@ -42,7 +42,7 @@ def login(request):
 				user=User.objects.get(username=username)
 				if user.password == password:
 					message="login successful, you can create new Lecture now"
-					return redirect('http://127.0.0.1:8000/webapp/account')
+					return redirect('/webapp/account')
 				else:
 					message="Wrong password."
 			except:
@@ -65,7 +65,7 @@ def account(request):
 			new_lecture.dateTime=dateTime
 			new_lecture.link=link
 			new_lecture.save()
-			return redirect('http://127.0.0.1:8000/webapp/attendance')
+			return redirect('/webapp/attendance')
 		else: 
 			message = "Please fill in latitude, longitude and Date&Time"
 			return render(request,'account.html',{"message":message})
