@@ -10,11 +10,12 @@ urlpatterns = [
     path('upload/', protocols.upload, name='upload'),
     path('help/', protocols.help, name='help'),
     path('check/', protocols.check, name='check'),
+    path('chooseastudent/', protocols.chooseAStudent, name='chooseAStudent'),
 
-    url('index', views.index),
-    url('register',views.register),
-    url('login',views.login),
-    url('account',views.account),
-    url('attendance',views.attendance),
-    url('',views.index),
+    path('index', views.index),
+    path('register',views.register),
+    path('login',views.login),
+    path('account',views.account),
+    path('attendance',views.attendance),
+    path('',views.index),
 ]
