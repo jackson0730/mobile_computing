@@ -11,6 +11,7 @@ urlpatterns = [
     path('help/', protocols.help, name='help'),
     path('check/', protocols.check, name='check'),
     path('selectastudent/', protocols.selectAStudent, name='selectAStudent'),
+    path('chooseastudent/',views.chooseastudent),
 
     
     # Please do not change 'index' to 'index/'
