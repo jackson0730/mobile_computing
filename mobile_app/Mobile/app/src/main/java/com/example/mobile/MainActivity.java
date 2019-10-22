@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
 
 import com.android.volley.Request;
@@ -28,7 +29,9 @@ import com.google.android.material.snackbar.Snackbar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.FileProvider;
 
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
@@ -43,6 +46,14 @@ import android.widget.Toast;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
     LocationRequest request;
     private RequestQueue queue;
     private String currentPhotoPath;
+    private String encodedImage;
 
     private Button pictureRequestButton;
     private Button helpRequestButton;
@@ -142,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
     private void getPermissions() {
 
         String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+            Manifest.permission.CAMERA};
 
         if (checkPermissions(this.getApplicationContext(), permissions) == true) {
 
@@ -354,12 +366,50 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /*
+    create file for image
+    code from: https://developer.android.com/training/camera/photobasics
+     */
+    private File createImageFile() throws IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "Send_" + timeStamp + "_";
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+        );
+
+        // Save a file: path for use with ACTION_VIEW intents
+        currentPhotoPath = image.getAbsolutePath();
+
+        return image;
+    }
+
+    /*
     Open camera to take picture and save picture in a file
+    code from: https://developer.android.com/training/camera/photobasics
      */
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        // Ensure that there's a camera activity to handle the intent
         if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+            // Create the File where the photo should go
+            File photoFile = null;
+            try {
+                photoFile = createImageFile();
+            } catch (IOException ex) {
+                // Error occurred while creating the File
+                ex.printStackTrace();
+            }
+            // Continue only if the File was successfully created
+            if (photoFile != null) {
+                Uri photoURI = FileProvider.getUriForFile(this,
+                        "com.example.mobile.fileprovider",
+                        photoFile);
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+            }
         }
     }
 
@@ -367,33 +417,67 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            Bundle extras = data.getExtras();
-            Bitmap imageBitmap = (Bitmap) extras.get("data");
-            String encodedImage = encodeImage(imageBitmap);
-            Bitmap image = decodeImage(encodedImage);
-            picture.setImageBitmap(image);
+            Toast error = Toast.makeText(MainActivity.this,
+                    "Now encode!", Toast.LENGTH_LONG);
+            error.show();
+            encodedImage = encodeImage(currentPhotoPath);
+            decodeImage(encodedImage);
         }
     }
 
     /*
     Encode image using base64
      */
-    private String encodeImage(Bitmap bm)
-    {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        bm.compress(Bitmap.CompressFormat.JPEG,100,baos);
-        byte[] b = baos.toByteArray();
-        String encImage = Base64.encodeToString(b, Base64.DEFAULT);
+    private String encodeImage(String filePath) {
+        try {
+            InputStream inputStream = new FileInputStream(filePath);//You can get an inputStream using any IO API
+        byte[] bytes;
+        byte[] buffer = new byte[8192];
+        int bytesRead;
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try {
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                output.write(buffer, 0, bytesRead);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        bytes = output.toByteArray();
+        String encodedString = Base64.encodeToString(bytes, Base64.DEFAULT);
 
-        return encImage;
+        return encodedString;
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     /*
     Decode base64 String back to image
      */
-    private Bitmap decodeImage(String encodedImage) {
+    private void decodeImage(String encodedImage) {
         byte[] decodedString = Base64.decode(encodedImage, Base64.DEFAULT);
-        Bitmap decodedImage = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
-        return decodedImage;
+
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "Receive_" + timeStamp + "_.jpg";
+
+        File photo=new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), imageFileName);
+        Log.d("Decoded", photo.toString());
+
+        if (photo.exists()) {
+            photo.delete();
+        }
+
+        try {
+            FileOutputStream fos=new FileOutputStream(photo.getPath());
+
+            fos.write(decodedString);
+            fos.close();
+        }
+        catch (java.io.IOException e) {
+            Log.e("PictureDemo", "Exception in photoCallback", e);
+        }
     }
 }
