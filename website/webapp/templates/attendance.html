@@ -51,10 +51,7 @@
 
                             <div class="header-bar-menu">
                                 <ul class="flex justify-content-center align-items-center py-2 pt-md-0">
-                                    Username
-
-                                <!-- <li><a href="register">Register</a></li>
-                                    <li><a href="login">Login</a></li> -->
+                                    <button class="btn btn-info" onclick="{location.href='/webapp/account'}">Create Lecture</button>
                                 </ul>
                             </div><!-- .header-bar-menu -->
                         </div><!-- .col -->
@@ -105,10 +102,23 @@
                             <header class="entry-header">
                                 <h1>Attendance for today</h1>
                             </header>
+                            <div>
+                                {% for attendance in attendances %}
+                                <tr>
+                                    <td>{{attendance.userID}}</td>
+                                    <td>{{attendance.lectureID}}</td>
+                                </tr>
+                                {% endfor %}
+                            </div>
 
                             <div class="entry-content">
                                 <br/>
                                 <form method="GET">
+                                    <div>
+                                        <h4>lectureID:</h4>
+                                        <input type="number" name="lectureID">
+                                    </div><br/>
+                                    <button class="btn btn-default" type="submit">Get Attendance</button>
                                 </form>
                             </div>
 
@@ -132,7 +142,7 @@
                     </header><!-- .entry-header -->
 
                     <div class="entry-content">
-                        <p>Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour.</p>
+                        <p>Lorem Ipsfum available, but the majority have suffered alteration in some form, by injected humour.</p>
                     </div><!-- .entry-content -->
 
                     <footer class="entry-footer read-more">

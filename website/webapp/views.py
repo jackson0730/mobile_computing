@@ -66,13 +66,18 @@ def account(request):
 			new_lecture.link=link
 			new_lecture.save()
 			return redirect('/webapp/attendance')
+												#add argument''', lectureID=new_lecture.lectureID '''
 		else: 
 			message = "Please fill in latitude, longitude and Date&Time"
 			return render(request,'account.html',{"message":message})
 	return render(request,'account.html')
 
 def attendance(request):
-	return render(request,'attendance.html')
+	if request.method=='GET':
+		lectureID = request.GET.get('lectureID')
+		# or change to lectureID = lectureID
+		attendances = Attendance.objects.filter(lectureID=lectureID)
+		return render(request,'attendance.html',{'attendances':attendances})
 
 def chooseastudent(request):
 	return render(request,'chooseastudent.html')
