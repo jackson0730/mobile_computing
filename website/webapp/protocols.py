@@ -195,29 +195,33 @@ def selectAStudent(request):
 
 def register(request):
     try:
-        username=request.POST['username']
-        password=request.POST['password']
-        user=User.objects.filter(username=username)
+        username = request.POST['username']
+        password = request.POST['password']
+
+        user = User.objects.filter(username=username, password=password)
+
         if user.exists():
-            response={'status': False}
+            response = {'status': False}
         else:
-            response={'status': False}
+            user = User()
+            user.username = username
+            user.password = password
+            user.save()
+
+            response = {'status': True}
     except:
-        response={'status': False}
+        response = {'status': False}
+
     return JsonResponse(response)
 
 def login(request):
-    ID = None
     try:
-        username=request.POST['username']
-        password=request.POST['password']
-        user=User.objects.filter(username=username)
-        if user.exists():
-            ID =user.ID
-            if user.password == password:
-                response={'status': True, 'ID':ID}
-            else:
-                response={'status': False, 'ID':ID}
+        username = request.POST['username']
+        password = request.POST['password']
+        user = User.objects.get(username=username, password=password)
+
+        response = {'status': True, 'ID': user.ID}
     except:
-        response={'status': False, 'ID':ID}
+        response = {'status': False}
+
     return JsonResponse(response)
