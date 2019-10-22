@@ -12,11 +12,16 @@ urlpatterns = [
     path('check/', protocols.check, name='check'),
     path('selectastudent/', protocols.selectAStudent, name='selectAStudent'),
 
-    path('index/', views.index),
-    path('register/',views.register),
-    path('login/',views.login),
-    path('account/',views.account),
-    path('attendance/',views.attendance),
-    path('chooseastudent/',views.chooseastudent),
+    
+    # Please do not change 'index' to 'index/'
+    # without '/' is for the webapp display
+    path('index', views.index),
+    path('register',views.register),
+    path('login',views.login),
+    path('account',views.account),
+    path('attendance',views.attendance),
     path('',views.index),
+    # with '/' is for the JsonResponse to mobileapp
+    path('register/',protocols.register, name='register'),
+    path('login/',protocols.login, name='login'),
 ]

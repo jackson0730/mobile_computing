@@ -8,32 +8,46 @@ def index(request):
 
 def register(request):
 	if request.method=='POST':
-		form = User(request.POST)
-		if form.is_valid():
-			username=form.cleaned_data['username']
-			password=form.cleaned_data['password']
-			registerAdd=User.objects.create_user(username=username,password=password)
-			if registerAdd == False:
-				return render(request,'register.html')
-			else:
-				return render(request,'login.html')
+		username= request.POST.get('username',None)
+		password= request.POST.get('password',None)
+		passwordc =request.POST.get('passwordc',None)
+		message = "Please fill in username and passwords."
+		if username and password and passwordc:
+			username = username.strip()
+			try:
+				user=User.objects.get(username=username)
+				message="username already exist."
+				return render(request,'register.html',{"message":message})
+			except:
+				if password==passwordc:
+					message="Registration successful! You can login now."
+					new_user=User.objects.create()
+					new_user.username=username
+					new_user.password=password
+					new_user.save()
+					return render(request,'login.html',{"message":message})
+				else:
+					message="The passwords you input are different, please try agian."
+					return render(request,'register.html',{"message":message})
 
-	else:
-		form = User()
-
-		args = {'form': form}
-		return render(request, 'register.html', args)
+	return render(request, 'register.html')
 
 def login(request):
 	if request.method=='POST':
-		username= request.POST.get('username')
-		password= request.POST.get('password')
-		match = auth.authenticate(username=username,password=password)
-		if match is not None:
-			auth.login(request, match)
-			return redirect('/',{'user':match})
-		else:
-			return render(request,'login.html',{'login_error':'username or password is wrong'})
+		username= request.POST.get('username',None)
+		password= request.POST.get('password',None)
+		message = "Please fill in both username and password."
+		if username and password:
+			username = username.strip()
+			try:
+				user=User.objects.get(username=username)
+				if user.password == password:
+					return render(request,'account.html')
+				else:
+					message="Wrong password."
+			except:
+				message = "username doesn't exist."
+			return render(request,'login.html',{"message":message})
 	return render(request, 'login.html')
 
 

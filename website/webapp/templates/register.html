@@ -107,6 +107,7 @@
                             <div class="entry-content">
                                 <br/>
                                 <form method="post">
+                                    <div>{{message}}</div>
                                     {% csrf_token %}
                                     <div>
                                         <h4>Username:</h4>
@@ -115,6 +116,10 @@
                                     <div>
                                         <h4>Password:</h4>
                                         <input type="text" name="password">
+                                    </div><br/>
+                                    <div>
+                                        <h4>Check Password:</h4>
+                                        <input type="text" name="passwordc">
                                     </div><br/>
                                     <button class="btn btn-default" type="submit">submit</button>
                                 </form>
