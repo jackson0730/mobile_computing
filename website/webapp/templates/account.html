@@ -143,7 +143,7 @@ function geoFindMe() {
 
                             <div class="entry-content">
                                 <form method="post">
-                                    {% csrf_token %}
+                                    <div style="color:white">{{message}}</div>
                                     <div>
                                         <h4>Latitude</h4>
                                         <input type="latitude" name="latitude">

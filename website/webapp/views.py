@@ -12,23 +12,22 @@ def register(request):
 		password= request.POST.get('password',None)
 		passwordc =request.POST.get('passwordc',None)
 		message = "Please fill in username and passwords."
-		if username and password and passwordc:
-			username = username.strip()
-			try:
-				user=User.objects.get(username=username)
+		if password != passwordc:
+			message="The passwords you input are different, please try agian."
+			return render(request,'register.html',{"message":message})
+		else:
+			same_name_user = User.objects.filter(username=username)
+			if same_name_user:
 				message="username already exist."
 				return render(request,'register.html',{"message":message})
-			except:
-				if password==passwordc:
-					message="Registration successful! You can login now."
-					new_user=User.objects.create()
-					new_user.username=username
-					new_user.password=password
-					new_user.save()
-					return render(request,'login.html',{"message":message})
-				else:
-					message="The passwords you input are different, please try agian."
-					return render(request,'register.html',{"message":message})
+			
+			message="Registration successful! You can login now."
+			new_user=User.objects.create()
+			new_user.username=username
+			new_user.password=password
+			new_user.save()
+			message="Registration is successful! You can login now."
+			return redirect('http://127.0.0.1:8000/webapp/login')
 
 	return render(request, 'register.html')
 
@@ -42,16 +41,34 @@ def login(request):
 			try:
 				user=User.objects.get(username=username)
 				if user.password == password:
-					return render(request,'account.html')
+					message="login successful, you can create new Lecture now"
+					return redirect('http://127.0.0.1:8000/webapp/account')
 				else:
 					message="Wrong password."
 			except:
 				message = "username doesn't exist."
-			return render(request,'login.html',{"message":message})
+		return render(request,'login.html',{"message":message})
 	return render(request, 'login.html')
 
 
 def account(request):
+	if request.method=='POST':
+		latitude = request.POST.get('latitude',None)
+		longitude = request.POST.get('longitude',None)
+		dateTime = request.POST.get('dateTime',None)
+		link = request.POST.get('link')
+		if latitude and longitude and dateTime:
+			message="Lecture added successful, you can see the students' attendance now."
+			new_lecture = Lecture.objects.create()
+			new_lecture.latitude=latitude
+			new_lecture.longitude=longitude
+			new_lecture.dateTime=dateTime
+			new_lecture.link=link
+			new_lecture.save()
+			return redirect('http://127.0.0.1:8000/webapp/attendance')
+		else: 
+			message = "Please fill in latitude, longitude and Date&Time"
+			return render(request,'account.html',{"message":message})
 	return render(request,'account.html')
 
 def attendance(request):
