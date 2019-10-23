@@ -117,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
             l.put("lectureID", 1);
             l.put("latitude", "30.50");
             l.put("longitude", "100.50");
-            l.put("dateTime", "2019-10-23T19:40:00Z");
+            l.put("dateTime", "2019-10-24T01:00:00Z");
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -348,6 +348,7 @@ public class MainActivity extends AppCompatActivity {
                                     if (checkTime(lecture) && checkLocation(lecture, location)) {
 
                                         currentLectureID = lecture.getString("lectureID");
+                                        Log.d("checklectureid", currentLectureID);
 
                                         String url = "http://43.240.97.26:8000/webapp/checkin/";
 
@@ -457,7 +458,7 @@ public class MainActivity extends AppCompatActivity {
                     parse(lecture.getString("dateTime"));
             Calendar cal = Calendar.getInstance();
             cal.setTime(startDate);
-            cal.add(Calendar.MINUTE, 30);
+            cal.add(Calendar.HOUR_OF_DAY, 2);
             Date endDate = cal.getTime();
 
             if (currentDate.after(startDate) && currentDate.before(endDate)) {
@@ -514,18 +515,21 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onResponse(String response) {
-                        Toast receive = Toast.makeText(MainActivity.this,
-                                "Request has been received!", Toast.LENGTH_LONG);
-                        receive.show();
+                        try {
+                            JSONObject resp = new JSONObject(response);
+                            if (resp.getString("status").equals("true")) {
+                                Log.d("checkpicturerequest", "request for a picture has been sent");
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }, new Response.ErrorListener() {
 
                     @Override
                     public void onErrorResponse(VolleyError e) {
                         e.getStackTrace();
-                        Toast error = Toast.makeText(MainActivity.this,
-                                "Can't send request to get picture", Toast.LENGTH_LONG);
-                        error.show();
+                        Log.d("checkpicturerequest", "could not request for a picture");
                     }
                 })
         {
@@ -541,6 +545,7 @@ public class MainActivity extends AppCompatActivity {
             public Map<String,String> getParams() {
                 Map<String, String> params = new HashMap<>();
                 params.put("id", id);
+                params.put("lectureID", currentLectureID);
                 params.put("type", "ask_picture");
 
                 return params;
@@ -667,18 +672,20 @@ public class MainActivity extends AppCompatActivity {
 
                         @Override
                         public void onResponse(String response) {
-                            Toast receive = Toast.makeText(MainActivity.this,
-                                    "Photo has been received by server!", Toast.LENGTH_LONG);
-                            receive.show();
+                            try {
+                                JSONObject resp = new JSONObject(response);
+                                if (resp.getString("status").equals("true")) {
+                                    Log.d("checksentphoto", "photo has been sent to the server");
+                                }
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
                         }
                     }, new Response.ErrorListener() {
 
                         @Override
                         public void onErrorResponse(VolleyError e) {
-                            e.getStackTrace();
-                            Toast error = Toast.makeText(MainActivity.this,
-                                    "Can't send photo to server", Toast.LENGTH_LONG);
-                            error.show();
+                            Log.d("checksentphoto", "photo can't be sent to the server");
                         }
                     })
             {
@@ -697,6 +704,7 @@ public class MainActivity extends AppCompatActivity {
                     params.put("id", id);
                     params.put("type", "picture");
                     params.put("data", encodedImage);
+                    params.put("lectureID", currentLectureID);
 
                     return params;
                 }
@@ -841,6 +849,7 @@ public class MainActivity extends AppCompatActivity {
                 Map<String, String> params = new HashMap<>();
                 params.put("ID_to_be_helped", ID_to_be_helped);
                 params.put("id", id);
+                params.put("lectureID", currentLectureID);
 
                 return params;
             }
