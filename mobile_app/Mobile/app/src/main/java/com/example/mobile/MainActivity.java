@@ -38,8 +38,6 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONArray;
@@ -72,12 +70,14 @@ public class MainActivity extends AppCompatActivity {
     private RequestQueue queue;
     private String currentPhotoPath;
     private String encodedImage;
+    private String currentData;
+    private String currentID_to_be_helped;
+    private String currentLectureID;
+    private String id;
     private JSONArray lectures;
     private JSONObject lecture;
 
     private Button pictureRequestButton;
-    private Button helpRequestButton;
-    private ImageView picture;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,23 +106,12 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
 
-        // If help request button is clicked (button only used for testing), show help request pop up
-        helpRequestButton = findViewById(R.id.helpRequest);
-        helpRequestButton.setOnClickListener(
-                new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        helpRequestPopUp();
-                    }
-                }
-        );
-
-        picture = findViewById(R.id.picture);
-
         client = LocationServices.getFusedLocationProviderClient(this);
         permissionsGranted = false;
         queue = Volley.newRequestQueue(this);
-        lectures = new JSONArray();
+        currentLectureID = "-1";
+        id = "1"; // GET THIS FROM LOGIN
+        lectures = new JSONArray(); // GET THIS FROM GETLECTURES
         JSONObject l = new JSONObject();
         try {
             l.put("lectureID", 1);
@@ -140,6 +129,10 @@ public class MainActivity extends AppCompatActivity {
         // checks location periodically and sends "checkin"
         client.getLastLocation();
         checkAttendance();
+
+        // check if there data for the user from the server
+        CheckThread checkThread = new CheckThread(); // ADD ID OF USER
+        checkThread.start();
     }
 
     @Override
@@ -172,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
         String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.CAMERA};
 
-        if (checkPermissions(this.getApplicationContext(), permissions) == true) {
+        if (checkPermissions(this.getApplicationContext(), permissions)) {
 
             permissionsGranted = true;
 
@@ -204,11 +197,12 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode,
                                            String[] permissions, int[] grantResults) {
         switch (requestCode) {
+
             case ALL_PERMISSIONS_CODE:
 
                 // if permission is not granted
                 if (grantResults.length > 0
-                        && checkGrantResults(grantResults) == true) {
+                        && checkGrantResults(grantResults)) {
                     Toast exitAppToast = Toast.makeText(MainActivity.this,
                             "Need to grant permissions to use app", Toast.LENGTH_LONG);
                     exitAppToast.show();
@@ -236,6 +230,100 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /*
+    sends "check" to server every 2 seconds
+     */
+    class CheckThread extends Thread {
+
+        @Override
+        public void run() {
+
+            String url = "http://43.240.97.26:8000/webapp/check/";
+
+            while (true) {
+
+                try {
+                    CheckThread.sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                if (!currentLectureID.equals("-1")) {
+
+                    StringRequest postRequest = new StringRequest
+                            (Request.Method.POST, url, new Response.Listener<String>() {
+
+                                @Override
+                                public void onResponse(String response) {
+
+                                    try {
+                                        JSONObject resp = new JSONObject(response);
+
+                                        if (resp.getString("status").equals("true")) {
+
+                                            switch(resp.getString("type")) {
+
+                                                case "ask_picture":
+                                                    takePicturePopUp(resp.getString("ID_to_be_helped"));
+                                                    break;
+
+                                                case "picture_respond":
+                                                    currentData = resp.getString("data");
+                                                    pictureReceivedPopUp();
+                                                    break;
+
+                                                case "answer_question":
+                                                    // ADD CODE
+                                                    break;
+
+                                                case "link":
+                                                    // ADD CODE
+                                                    break;
+                                            }
+                                        }
+
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }, new Response.ErrorListener() {
+
+                                @Override
+                                public void onErrorResponse(VolleyError e) {
+                                    e.getStackTrace();
+                                    Toast error = Toast.makeText(MainActivity.this,
+                                            "Can't send request to check", Toast.LENGTH_LONG);
+                                    error.show();
+                                }
+                            }) {
+                        @Override
+                        public Map<String, String> getHeaders() throws AuthFailureError {
+                            Map<String, String> headers = new HashMap<>();
+                            headers.put("Content-Type", "application/x-www-form-urlencoded");
+
+                            return headers;
+                        }
+
+                        @Override
+                        public Map<String, String> getParams() {
+                            Map<String, String> params = new HashMap<>();
+                            try {
+                                params.put("id", id); // ADD ID OF USER
+                                params.put("lectureID", lecture.getString("lectureID"));
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+
+                            return params;
+                        }
+                    };
+                    queue.add(postRequest);
+                }
+            }
+        }
+
+    }
+
+    /*
     Requests location and sends "checkin" to server
      */
     private void checkAttendance() {
@@ -246,17 +334,13 @@ public class MainActivity extends AppCompatActivity {
         request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         try {
-            if (permissionsGranted == true) {
+            if (permissionsGranted) {
                 client.requestLocationUpdates(request, locationCallback = new LocationCallback() {
                     @Override
                     public void onLocationResult(LocationResult locationResult) {
                         Location location = locationResult.getLastLocation();
                         if (location != null) {
-                            // CHECK LOCATION AND SEND "checkin"
-                            TextView textView = findViewById(R.id.location);
-                            textView.setText("latitude: " + location.getLatitude() +
-                                    "\n longitude: " + location.getLongitude());
-
+                            // check each lecture in lectures
                             for (int i = 0; i < lectures.length(); i++) {
                                 try {
                                     lecture = lectures.getJSONObject(i);
@@ -273,7 +357,8 @@ public class MainActivity extends AppCompatActivity {
 
                                                         try {
                                                             JSONObject resp = new JSONObject(response);
-                                                            if (resp.getString("status") == "true") {
+                                                            if (resp.getString("status").equals("true")) {
+                                                                currentLectureID = lecture.getString("lectureID");
                                                                 Toast receive = Toast.makeText(MainActivity.this,
                                                                         "You are attending the lecture!", Toast.LENGTH_LONG);
                                                                 receive.show();
@@ -305,7 +390,7 @@ public class MainActivity extends AppCompatActivity {
                                             public Map<String,String> getParams() {
                                                 Map<String, String> params = new HashMap<>();
                                                 try {
-                                                    params.put("id", "1"); // ADD ID OF USER
+                                                    params.put("id", id);
                                                     params.put("lectureID", lecture.getString("lectureID"));
                                                 } catch (JSONException e) {
                                                     e.printStackTrace();
@@ -345,13 +430,11 @@ public class MainActivity extends AppCompatActivity {
                     currentLan, currentLon, distance);
 
             if (distance[0] < 30) {
-                Log.d("locationcheck", "location is correct");
                 return true;
             }
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        Log.d("locationcheck", "location is incorrect");
         return false;
     }
 
@@ -362,9 +445,6 @@ public class MainActivity extends AppCompatActivity {
     private boolean checkTime(JSONObject lecture) {
         try {
             Date currentDate = Calendar.getInstance().getTime();
-            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-            String strDate = dateFormat.format(currentDate);
-            Log.d("currenttime", strDate);
             Date startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").
                     parse(lecture.getString("dateTime"));
             Calendar cal = Calendar.getInstance();
@@ -376,9 +456,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
 
-        } catch (JSONException e) {
-            e.printStackTrace();
-        } catch (ParseException e){
+        } catch (JSONException | ParseException e) {
             e.printStackTrace();
         }
         return false;
@@ -397,34 +475,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 pictureRequest();
-            }
-        });
-
-        builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                dialogInterface.dismiss();
-            }
-        });
-
-        AlertDialog dialog = builder.create();
-        dialog.show();
-    }
-
-    /*
-    Pop up to ask user if they would like to help a classmate by taking a picture
-     */
-
-    private void helpRequestPopUp() {
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-        builder.setTitle("A classmate is requesting help")
-                .setMessage("Would you like to help a classmate by taking a picture of the whiteboard?");
-
-        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                takePicture();
             }
         });
 
@@ -477,7 +527,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public Map<String,String> getParams() {
                 Map<String, String> params = new HashMap<>();
-                params.put("id", "1"); // ADD ID OF USER
+                params.put("id", id);
                 params.put("type", "ask_picture");
 
                 return params;
@@ -487,11 +537,39 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /*
+    Pop up to ask user if they would like to help a classmate by taking a picture
+     */
+
+    private void takePicturePopUp(final String ID_to_be_helped) {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle("A classmate is requesting help")
+                .setMessage("Would you like to help a classmate by taking a picture of the whiteboard?");
+
+        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                takePicture(ID_to_be_helped);
+            }
+        });
+
+        builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.dismiss();
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    /*
     Accesses camera app to take a picture and sends upload with type picture
      */
-    private void takePicture() {
+    private void takePicture(String ID_to_be_helped) {
 
-        if (this.getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY) == false) {
+        if (!this.getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
             Toast error = Toast.makeText(MainActivity.this,
                     "Device has no camera!", Toast.LENGTH_LONG);
             error.show();
@@ -499,7 +577,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         try {
-            if (permissionsGranted == true) {
+            if (permissionsGranted) {
+                currentID_to_be_helped = ID_to_be_helped;
                 dispatchTakePictureIntent();
             } else {
                 Toast error = Toast.makeText(MainActivity.this,
@@ -601,8 +680,8 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public Map<String,String> getParams() {
                     Map<String, String> params = new HashMap<>();
-                    params.put("ID_to_be_helped", "2"); // ADD ID OF USER TO BE HELPED
-                    params.put("id", "1"); // ADD ID OF USER
+                    params.put("ID_to_be_helped", currentID_to_be_helped);
+                    params.put("id", id);
                     params.put("type", "picture");
                     params.put("data", encodedImage);
 
@@ -620,27 +699,55 @@ public class MainActivity extends AppCompatActivity {
     private String encodeImage(String filePath) {
         try {
             InputStream inputStream = new FileInputStream(filePath);//You can get an inputStream using any IO API
-        byte[] bytes;
-        byte[] buffer = new byte[8192];
-        int bytesRead;
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        try {
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                output.write(buffer, 0, bytesRead);
+            byte[] bytes;
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            try {
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    output.write(buffer, 0, bytesRead);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        bytes = output.toByteArray();
-        String encodedString = Base64.encodeToString(bytes, Base64.DEFAULT);
+            bytes = output.toByteArray();
+            String encodedString = Base64.encodeToString(bytes, Base64.DEFAULT);
 
-        return encodedString;
+            return encodedString;
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
 
         return null;
+    }
+
+    /*
+    Pop up when an image is received
+     */
+
+    private void pictureReceivedPopUp() {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle("You have received an image")
+                .setMessage("Would you like to save the image?");
+
+        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                decodeImage(currentData);
+            }
+        });
+
+        builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.dismiss();
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     /*
@@ -666,7 +773,7 @@ public class MainActivity extends AppCompatActivity {
             fos.close();
         }
         catch (java.io.IOException e) {
-            Log.e("PictureDemo", "Exception in photoCallback", e);
+            e.printStackTrace();
         }
     }
 }
