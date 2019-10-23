@@ -140,13 +140,13 @@ def check(request):
 
         response = {'status': False}
 
-        if ChosenStudent.objects.filter(ID=ID).exists():
+        if ChosenStudent.objects.filter(userID=userID, lectureID=lectureID).exists():
             response = {
                 'status': True,
                 'type': 'answer_question'
             }
 
-            ChosenStudent.objects.get(ID=ID).delete()
+            ChosenStudent.objects.filter(userID=userID, lectureID=lectureID).delete()
 
         elif PictureRequest.objects.filter(ID=ID, status='done').exists():
             response = {

@@ -33,7 +33,6 @@ class QuestionRequest(models.Model):
     data = models.TextField(null=True)
 
 class ChosenStudent(models.Model):
-    ID = models.IntegerField(primary_key=True)
     userID = models.ForeignKey(User, on_delete=models.CASCADE)
     lectureID = models.ForeignKey(Lecture, on_delete=models.CASCADE)
 
