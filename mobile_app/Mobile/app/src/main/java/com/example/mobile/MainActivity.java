@@ -115,9 +115,9 @@ public class MainActivity extends AppCompatActivity {
         JSONObject l = new JSONObject();
         try {
             l.put("lectureID", 1);
-            l.put("latitude", "-37.50");
-            l.put("longitude", "144.96 ");
-            l.put("dateTime", "2019-10-23T12:50:00Z");
+            l.put("latitude", "30.50");
+            l.put("longitude", "100.50");
+            l.put("dateTime", "2019-10-23T19:40:00Z");
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -363,6 +363,10 @@ public class MainActivity extends AppCompatActivity {
                                                                         "You are attending the lecture!", Toast.LENGTH_LONG);
                                                                 receive.show();
                                                             }
+
+                                                            if (resp.getString("status").equals("false")) {
+                                                                Log.d("checkattendance", "attendance is false");
+                                                            }
                                                         } catch (JSONException e) {
                                                             e.printStackTrace();
                                                         }
@@ -430,11 +434,13 @@ public class MainActivity extends AppCompatActivity {
                     currentLan, currentLon, distance);
 
             if (distance[0] < 30) {
+                Log.d("checklocation", "location is correct");
                 return true;
             }
         } catch (JSONException e) {
             e.printStackTrace();
         }
+        Log.d("checklocation", "location is incorrect");
         return false;
     }
 
@@ -453,12 +459,14 @@ public class MainActivity extends AppCompatActivity {
             Date endDate = cal.getTime();
 
             if (currentDate.after(startDate) && currentDate.before(endDate)) {
+                Log.d("checktime", "time is correct");
                 return true;
             }
 
         } catch (JSONException | ParseException e) {
             e.printStackTrace();
         }
+        Log.d("checktime", "time is incorrect");
         return false;
     }
 
@@ -549,7 +557,7 @@ public class MainActivity extends AppCompatActivity {
         builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-                takePicture(ID_to_be_helped);
+                sendHelp(ID_to_be_helped);
             }
         });
 
@@ -592,7 +600,7 @@ public class MainActivity extends AppCompatActivity {
 
     /*
     create file for image
-    code from: https://developer.android.com/training/camera/photobasics
+    code adapted from: https://developer.android.com/training/camera/photobasics
      */
     private File createImageFile() throws IOException {
         // Create an image file name
@@ -613,7 +621,7 @@ public class MainActivity extends AppCompatActivity {
 
     /*
     Open camera to take picture and save picture in a file
-    code from: https://developer.android.com/training/camera/photobasics
+    code adapted from: https://developer.android.com/training/camera/photobasics
      */
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -695,6 +703,7 @@ public class MainActivity extends AppCompatActivity {
 
     /*
     Encode image using base64
+    code adapted from: https://stackoverflow.com/a/17874349
      */
     private String encodeImage(String filePath) {
         try {
@@ -752,6 +761,7 @@ public class MainActivity extends AppCompatActivity {
 
     /*
     Decode base64 String back to image and save image
+    code adapted from: https://stackoverflow.com/a/7982964
      */
     private void decodeImage(String encodedImage) {
         byte[] decodedString = Base64.decode(encodedImage, Base64.DEFAULT);
@@ -776,4 +786,62 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
+    /*
+    Send request to let server know that you want to help a classmate
+     */
+    private void sendHelp(final String ID_to_be_helped) {
+
+        String url = "http://43.240.97.26:8000/webapp/help/";
+
+        StringRequest postRequest = new StringRequest
+                (Request.Method.POST, url, new Response.Listener<String>() {
+
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            JSONObject resp = new JSONObject(response);
+                            if (resp.getString("status").equals("true")) {
+                                takePicture(ID_to_be_helped);
+                            }
+
+                            if (resp.getString("status").equals("false")) {
+                                Log.d("checkhelp", "help is false");
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }, new Response.ErrorListener() {
+
+                    @Override
+                    public void onErrorResponse(VolleyError e) {
+                        e.getStackTrace();
+                        Toast error = Toast.makeText(MainActivity.this,
+                                "Can't send help request to server", Toast.LENGTH_LONG);
+                        error.show();
+                    }
+                })
+        {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String>  headers = new HashMap<String, String>();
+                headers.put("Content-Type", "application/x-www-form-urlencoded");
+
+                return headers;
+            }
+
+            @Override
+            public Map<String,String> getParams() {
+                Map<String, String> params = new HashMap<>();
+                params.put("ID_to_be_helped", ID_to_be_helped);
+                params.put("id", id);
+
+                return params;
+            }
+        };
+
+        queue.add(postRequest);
+    }
+
 }
