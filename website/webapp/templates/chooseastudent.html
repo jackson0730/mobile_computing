@@ -11,7 +11,11 @@ function chooseastudent()
 
         if (request.readyState === 4 && request.status === 200) {
             var json = JSON.parse(request.responseText);
-            alert(json.status);
+            
+            if (json.status == true)
+                alert("A student has been chosen");
+            else
+                alert("Failed to choose a student");
         }
     };
     var data = "lectureID=" + lectureID;
@@ -52,8 +56,12 @@ function pushLink()
     request.onreadystatechange = function () {
 
         if (request.readyState === 4 && request.status === 200) {
+            var json = JSON.parse(request.responseText);
+
             if (json.status == true)
-                alert(request.responseText);
+                alert("The link has been pushed to all students in the lecture");
+            else
+                alert("Failed to push the link to all students in the lecture");
         }
     };
     var data = "lectureID=" + lectureID;
