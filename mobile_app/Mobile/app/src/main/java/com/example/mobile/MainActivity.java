@@ -15,7 +15,7 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -73,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
     private String currentPhotoPath;
     private String encodedImage;
     private JSONArray lectures;
+    private JSONObject lecture;
 
     private Button pictureRequestButton;
     private Button helpRequestButton;
@@ -121,6 +122,17 @@ public class MainActivity extends AppCompatActivity {
         client = LocationServices.getFusedLocationProviderClient(this);
         permissionsGranted = false;
         queue = Volley.newRequestQueue(this);
+        lectures = new JSONArray();
+        JSONObject l = new JSONObject();
+        try {
+            l.put("lectureID", 1);
+            l.put("latitude", "-37.50");
+            l.put("longitude", "144.96 ");
+            l.put("dateTime", "2019-10-23T12:50:00Z");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        lectures.put(l);
 
         // Get permissions
         getPermissions();
@@ -244,28 +256,31 @@ public class MainActivity extends AppCompatActivity {
                             TextView textView = findViewById(R.id.location);
                             textView.setText("latitude: " + location.getLatitude() +
                                     "\n longitude: " + location.getLongitude());
-/*
+
                             for (int i = 0; i < lectures.length(); i++) {
                                 try {
-                                    JSONObject lecture = lectures.getJSONObject(i);
+                                    lecture = lectures.getJSONObject(i);
 
                                     if (checkTime(lecture) && checkLocation(lecture, location)) {
 
-                                        String url = "http://43.240.97.26:8000/webapp/checkin";
+                                        String url = "http://43.240.97.26:8000/webapp/checkin/";
 
-                                        Map<String, String> params = new HashMap<>();
-                                        params.put("id", "1"); // ADD ID OF USER
-                                        params.put("lectureID", lecture.getString("lectureID"));
-                                        JSONObject jsonParams = new JSONObject(params);
-
-                                        JsonObjectRequest postRequest = new JsonObjectRequest
-                                                (Request.Method.POST, url, jsonParams, new Response.Listener<JSONObject>() {
+                                        StringRequest postRequest = new StringRequest
+                                                (Request.Method.POST, url, new Response.Listener<String>() {
 
                                                     @Override
-                                                    public void onResponse(JSONObject response) {
-                                                        Toast receive = Toast.makeText(MainActivity.this,
-                                                                "checkin has been received!", Toast.LENGTH_LONG);
-                                                        receive.show();
+                                                    public void onResponse(String response) {
+
+                                                        try {
+                                                            JSONObject resp = new JSONObject(response);
+                                                            if (resp.getString("status") == "true") {
+                                                                Toast receive = Toast.makeText(MainActivity.this,
+                                                                        "You are attending the lecture!", Toast.LENGTH_LONG);
+                                                                receive.show();
+                                                            }
+                                                        } catch (JSONException e) {
+                                                            e.printStackTrace();
+                                                        }
                                                     }
                                                 }, new Response.ErrorListener() {
 
@@ -285,14 +300,28 @@ public class MainActivity extends AppCompatActivity {
 
                                                 return headers;
                                             }
+
+                                            @Override
+                                            public Map<String,String> getParams() {
+                                                Map<String, String> params = new HashMap<>();
+                                                try {
+                                                    params.put("id", "1"); // ADD ID OF USER
+                                                    params.put("lectureID", lecture.getString("lectureID"));
+                                                } catch (JSONException e) {
+                                                    e.printStackTrace();
+                                                }
+
+                                                return params;
+                                            }
                                         };
                                         queue.add(postRequest);
+
                                     }
 
                                 } catch (JSONException e) {
                                     e.printStackTrace();
                                 }
-                            }*/
+                            }
                         }
                     }
                 }, null);
@@ -316,11 +345,13 @@ public class MainActivity extends AppCompatActivity {
                     currentLan, currentLon, distance);
 
             if (distance[0] < 30) {
+                Log.d("locationcheck", "location is correct");
                 return true;
             }
         } catch (JSONException e) {
             e.printStackTrace();
         }
+        Log.d("locationcheck", "location is incorrect");
         return false;
     }
 
@@ -330,7 +361,10 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean checkTime(JSONObject lecture) {
         try {
-            Date currentDate = new Date();
+            Date currentDate = Calendar.getInstance().getTime();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+            String strDate = dateFormat.format(currentDate);
+            Log.d("currenttime", strDate);
             Date startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").
                     parse(lecture.getString("dateTime"));
             Calendar cal = Calendar.getInstance();
@@ -410,18 +444,13 @@ public class MainActivity extends AppCompatActivity {
      */
     private void pictureRequest() {
 
-        String url = "http://43.240.97.26:8000/webapp/askhelp";
+        String url = "http://43.240.97.26:8000/webapp/askhelp/";
 
-        Map<String, String> params = new HashMap<>();
-        params.put("id", "1"); // ADD ID OF USER
-        params.put("type", "ask_picture");
-        JSONObject jsonParams = new JSONObject(params);
-
-        JsonObjectRequest postRequest = new JsonObjectRequest
-                (Request.Method.POST, url, jsonParams, new Response.Listener<JSONObject>() {
+        StringRequest postRequest = new StringRequest
+                (Request.Method.POST, url, new Response.Listener<String>() {
 
                     @Override
-                    public void onResponse(JSONObject response) {
+                    public void onResponse(String response) {
                         Toast receive = Toast.makeText(MainActivity.this,
                                 "Request has been received!", Toast.LENGTH_LONG);
                         receive.show();
@@ -443,6 +472,15 @@ public class MainActivity extends AppCompatActivity {
             headers.put("Content-Type", "application/x-www-form-urlencoded");
 
             return headers;
+            }
+
+            @Override
+            public Map<String,String> getParams() {
+                Map<String, String> params = new HashMap<>();
+                params.put("id", "1"); // ADD ID OF USER
+                params.put("type", "ask_picture");
+
+                return params;
             }
         };
             queue.add(postRequest);
@@ -530,20 +568,13 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             encodedImage = encodeImage(currentPhotoPath);
 
-            String url = "http://43.240.97.26:8000/webapp/upload";
+            String url = "http://43.240.97.26:8000/webapp/upload/";
 
-            Map<String, String> params = new HashMap<>();
-            params.put("ID_to_be_helped", "2"); // ADD ID OF USER TO BE HELPED
-            params.put("id", "1"); // ADD ID OF USER
-            params.put("type", "picture");
-            params.put("data", encodedImage);
-            JSONObject jsonParams = new JSONObject(params);
-
-            JsonObjectRequest postRequest = new JsonObjectRequest
-                    (Request.Method.POST, url, jsonParams, new Response.Listener<JSONObject>() {
+            StringRequest postRequest = new StringRequest
+                    (Request.Method.POST, url, new Response.Listener<String>() {
 
                         @Override
-                        public void onResponse(JSONObject response) {
+                        public void onResponse(String response) {
                             Toast receive = Toast.makeText(MainActivity.this,
                                     "Photo has been received by server!", Toast.LENGTH_LONG);
                             receive.show();
@@ -565,6 +596,17 @@ public class MainActivity extends AppCompatActivity {
                     headers.put("Content-Type", "application/x-www-form-urlencoded");
 
                     return headers;
+                }
+
+                @Override
+                public Map<String,String> getParams() {
+                    Map<String, String> params = new HashMap<>();
+                    params.put("ID_to_be_helped", "2"); // ADD ID OF USER TO BE HELPED
+                    params.put("id", "1"); // ADD ID OF USER
+                    params.put("type", "picture");
+                    params.put("data", encodedImage);
+
+                    return params;
                 }
             };
 
@@ -602,7 +644,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /*
-    Decode base64 String back to image
+    Decode base64 String back to image and save image
      */
     private void decodeImage(String encodedImage) {
         byte[] decodedString = Base64.decode(encodedImage, Base64.DEFAULT);
