@@ -347,6 +347,8 @@ public class MainActivity extends AppCompatActivity {
 
                                     if (checkTime(lecture) && checkLocation(lecture, location)) {
 
+                                        currentLectureID = lecture.getString("lectureID");
+
                                         String url = "http://43.240.97.26:8000/webapp/checkin/";
 
                                         StringRequest postRequest = new StringRequest
@@ -358,7 +360,6 @@ public class MainActivity extends AppCompatActivity {
                                                         try {
                                                             JSONObject resp = new JSONObject(response);
                                                             if (resp.getString("status").equals("true")) {
-                                                                currentLectureID = lecture.getString("lectureID");
                                                                 Toast receive = Toast.makeText(MainActivity.this,
                                                                         "You are attending the lecture!", Toast.LENGTH_LONG);
                                                                 receive.show();
@@ -404,7 +405,7 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         };
                                         queue.add(postRequest);
-
+                                        return;
                                     }
 
                                 } catch (JSONException e) {
@@ -412,6 +413,7 @@ public class MainActivity extends AppCompatActivity {
                                 }
                             }
                         }
+                        currentLectureID = "-1";
                     }
                 }, null);
             }
@@ -475,26 +477,29 @@ public class MainActivity extends AppCompatActivity {
      */
     private void pictureRequestPopUp() {
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-        builder.setTitle("Request a picture")
-                .setMessage("Would you like to request a picture of the whiteboard?");
+        if (!currentLectureID.equals("-1")) {
 
-        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                pictureRequest();
-            }
-        });
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle("Request a picture")
+                    .setMessage("Would you like to request a picture of the whiteboard?");
 
-        builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                dialogInterface.dismiss();
-            }
-        });
+            builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    pictureRequest();
+                }
+            });
 
-        AlertDialog dialog = builder.create();
-        dialog.show();
+            builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    dialogInterface.dismiss();
+                }
+            });
+
+            AlertDialog dialog = builder.create();
+            dialog.show();
+        }
     }
 
     /*
