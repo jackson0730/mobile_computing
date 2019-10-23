@@ -203,9 +203,37 @@ def check(request):
     return JsonResponse(response)
 
 def webcheck(request):
-    userID = request.POST['id']
     lectureID = request.POST['lectureID']
 
+    questions = QuestionRequest.objects.filter(lectureID=lectureID)
+
+    if questions.exists():
+        question = questions[0]
+        response = {
+            'status': True,
+            'userID': question.userID.ID,
+            'data': question.data
+        }
+        question.delete()
+
+    else:
+        response = {'status': False}
+
+    return JsonResponse(response)
+
+def pushLink(request):
+    try:
+        lectureID = request.POST['lectureID']
+        lecture = Lecture.objects.get(ID=lectureID)
+        link = Link()
+        link.lectureID = lecture
+        link.alink = lecture.alink
+        link.save()
+        response = {'status': True}
+    except:
+        response = {'status': False}
+
+    return JsonResponse(response)
 
 def selectAStudent(request):
     try:

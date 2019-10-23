@@ -10,6 +10,8 @@ urlpatterns = [
     path('upload/', protocols.upload, name='upload'),
     path('help/', protocols.help, name='help'),
     path('check/', protocols.check, name='check'),
+    path('webcheck/', protocols.webcheck, name='webcheck'),
+    path('pushLink/', protocols.pushLink, name='pushLink'),
     path('selectastudent/', protocols.selectAStudent, name='selectAStudent'),
     path('chooseastudent',views.chooseastudent),
 
