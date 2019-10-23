@@ -10,7 +10,7 @@ class Lecture(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude =  models.DecimalField(max_digits=9, decimal_places=6)
     dateTime = models.DateTimeField()
-    link = models.CharField(null=True, max_length=100)
+    alink = models.CharField(null=True, max_length=100)
 
 class Attendance(models.Model):
     # Because Django doesn't support composite PK, so we combine
@@ -20,17 +20,30 @@ class Attendance(models.Model):
     lectureID = models.ForeignKey(Lecture, on_delete=models.CASCADE)
 
 class PictureRequest(models.Model):
-    userID = models.OneToOneField(User, on_delete=models.CASCADE)
+    ID = models.IntegerField(primary_key=True)
+    userID = models.ForeignKey(User, on_delete=models.CASCADE)
     data = models.TextField(null=True)
     status = models.CharField(max_length=10) # available/taken/done
+    lectureID = models.ForeignKey(Lecture, on_delete=models.CASCADE)
 
 class QuestionRequest(models.Model):
-    userID = models.OneToOneField(User, on_delete=models.CASCADE)
+    ID = models.IntegerField(primary_key=True)
+    userID = models.ForeignKey(User, on_delete=models.CASCADE)
+    lectureID = models.ForeignKey(Lecture, on_delete=models.CASCADE)
     data = models.TextField(null=True)
 
 class ChosenStudent(models.Model):
-    userID = models.OneToOneField(User, on_delete=models.CASCADE)
+    ID = models.IntegerField(primary_key=True)
+    userID = models.ForeignKey(User, on_delete=models.CASCADE)
+    lectureID = models.ForeignKey(Lecture, on_delete=models.CASCADE)
 
 # This only stores links for one lecture
 class Link(models.Model):
-    link = models.CharField(null=True, max_length=100)
+    lectureID = models.OneToOneField(Lecture, on_delete=models.CASCADE)
+    alink = models.CharField(null=True, max_length=100)
+
+class RjectedPictureRequest(models.Model):
+    ID = models.IntegerField(primary_key=True)
+    userID = models.ForeignKey(User, on_delete=models.CASCADE)
+    lectureID = models.ForeignKey(Lecture, on_delete=models.CASCADE)
+    requestID = models.ForeignKey(PictureRequest, on_delete=models.CASCADE)

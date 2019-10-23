@@ -46,19 +46,25 @@ def askhelp(request):
     try:
         userID = request.POST['id']
         helpType = request.POST['type']
+        lectureID = request.POST['lectureID']
         response = {'status': True}
         
         user = User.objects.get(ID=userID)
+        lecture = Lecture.objects.get(ID=lectureID)
 
         if helpType == 'ask_picture':
             pictureRequest = PictureRequest()
+            pictureRequest.ID = int(str(userID) + str(lectureID))
             pictureRequest.userID = user
             pictureRequest.status = 'available'
+            pictureRequest.lectureID = lecture
             pictureRequest.save(force_insert=True)
 
         elif helpType == 'question':
             questionRequest = QuestionRequest()
+            questionRequest.ID = int(str(userID) + str(lectureID))
             questionRequest.userID = user
+            questionRequest.lectureID = lecture
             questionRequest.save(force_insert=True)
 
         else:
@@ -72,22 +78,28 @@ def askhelp(request):
 def upload(request):
     try:
         userID = request.POST['id']
+        lectureID = request.POST['lectureID']
         dataType = request.POST['type']
         IDToBeHelped = request.POST['ID_to_be_helped']
         data = request.POST['data']
+
         response = {'status': True}
 
         if dataType == 'picture':
-            pictureRequest = PictureRequest.objects.get(userID=IDToBeHelped)
+            ID = int(str(IDToBeHelped) + str(lectureID))
+            pictureRequest = PictureRequest.objects.get(ID=ID)
             pictureRequest.data = data
             pictureRequest.status = 'done'
             pictureRequest.save(force_update=True)
 
         elif dataType == 'voice':
             user = User.objects.get(ID=userID)
+            lecture = Lecture.objects.get(ID=lectureID)
 
             questionRequest = QuestionRequest()
+            questionRequest.ID = int(str(userID) + str(lectureID))
             questionRequest.userID = user
+            questionRequest.lectureID = lecture
             questionRequest.data = data
             questionRequest.save(force_insert=True)
 
@@ -102,7 +114,10 @@ def upload(request):
 def help(request):
     try:
         IDToBeHelped = request.POST['ID_to_be_helped']
-        pictureRequest = PictureRequest.objects.get(userID=IDToBeHelped)
+        lectureID = request.POST['lectureID']
+
+        ID = int(str(IDToBeHelped) + str(lectureID))
+        pictureRequest = PictureRequest.objects.get(ID=ID)
 
         if pictureRequest.status == 'available':
             pictureRequest.status = 'taken'
@@ -120,58 +135,77 @@ numVisted = 0
 def check(request):
     try:
         userID = request.POST['id']
+        lectureID = request.POST['lectureID']
+        ID = int(str(userID) + str(lectureID))
 
-        if ChosenStudent.objects.filter(userID=userID).exists():
+        response = {'status': False}
+
+        if ChosenStudent.objects.filter(ID=ID).exists():
             response = {
                 'status': True,
                 'type': 'answer_question'
             }
 
-            ChosenStudent.objects.get(userID=userID).delete()
+            ChosenStudent.objects.get(ID=ID).delete()
 
-        elif PictureRequest.objects.filter(userID=userID, status='done').exists():
+        elif PictureRequest.objects.filter(ID=ID, status='done').exists():
             response = {
                 'status': True,
                 'type': 'picture_respond',
-                'data': PictureRequest.objects.get(userID=userID).data
+                'data': PictureRequest.objects.get(ID=ID).data
             }
 
-            PictureRequest.objects.get(userID=userID).delete()
+            PictureRequest.objects.get(ID=ID).delete()
 
-        elif Link.objects.all().exists():
+        elif Link.objects.filter(lectureID=lectureID).exists():
             global numVisted
             # Should be Attendance instead of User, will change later
-            numUsers = len(User.objects.all())
+            numUsers = len(Attendance.objects.filter(lectureID=lectureID))
 
             if numVisted < numUsers:
                 response = {
                     'status': True,
                     'type': 'link',
-                    'data': Link.objects.all()[0].link
+                    'data': Link.objects.get(lectureID=lectureID).alink
                 }
                 numVisted += 1
 
                 if numVisted == numUsers:
                     numVisted = 0
-                    Link.objects.all().delete()
+                    Link.objects.get(lectureID=lectureID).delete()
 
         else:
-            pictureRequests = PictureRequest.objects.filter(status='available').exclude(userID=userID)
-            IDs = [pictureRequest.userID.ID for pictureRequest in pictureRequests]
+            pictureRequests = PictureRequest.objects.filter(status='available', lectureID=lectureID).exclude(ID=ID)
+            
+            for pictureRequest in pictureRequests:
+                ID = int(str(userID) + str(lectureID) + str(pictureRequest.ID))
 
-            if len(IDs) > 0:
-                response = {
-                    'status': True,
-                    'type': 'ask_picture',
-                    'ID_to_be_helped': IDs
-                }
+                if not RjectedPictureRequest.objects.filter(ID=ID).exists():
+                    
+                    rjectedPictureRequest = RjectedPictureRequest()
+                    rjectedPictureRequest.ID = ID
+                    rjectedPictureRequest.userID = User.objects.get(ID=userID)
+                    rjectedPictureRequest.lectureID = Lecture.objects.get(ID=lectureID)
+                    rjectedPictureRequest.requestID = pictureRequest
+                    rjectedPictureRequest.save(force_insert=True)
 
-            else:
-                response = {'status': False}
+                    response = {
+                        'status': True,
+                        'type': 'ask_picture',
+                        'ID_to_be_helped': pictureRequest.userID.ID
+                    }
+
+                    break
+
     except:
         response = {'status': False}
 
     return JsonResponse(response)
+
+def webcheck(request):
+    userID = request.POST['id']
+    lectureID = request.POST['lectureID']
+
 
 def selectAStudent(request):
     try:
@@ -182,6 +216,7 @@ def selectAStudent(request):
             student = random.choice(students)
             chosenStudent = ChosenStudent()
             chosenStudent.userID = student.userID
+            chosenStudent.lectureID = Lecture.objects.get(ID=lectureID)
             chosenStudent.save(force_insert=True)
 
             response = {'status': True}
