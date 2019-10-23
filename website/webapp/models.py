@@ -2,7 +2,7 @@ from django.db import models
 
 class User(models.Model):
     ID = models.AutoField(primary_key=True)
-    username = models.CharField(max_length=20)
+    username = models.CharField(max_length=20, unique=True)
     password = models.CharField(max_length=20)
 
 class Lecture(models.Model):
@@ -13,7 +13,9 @@ class Lecture(models.Model):
     link = models.CharField(null=True, max_length=100)
 
 class Attendance(models.Model):
-    ID = models.AutoField(primary_key=True)
+    # Because Django doesn't support composite PK, so we combine
+    # str(userID) and str(lectureID) togeter as a workaround
+    ID = models.IntegerField(primary_key=True)
     userID = models.ForeignKey(User, on_delete=models.CASCADE)
     lectureID = models.ForeignKey(Lecture, on_delete=models.CASCADE)
 
@@ -29,5 +31,6 @@ class QuestionRequest(models.Model):
 class ChosenStudent(models.Model):
     userID = models.OneToOneField(User, on_delete=models.CASCADE)
 
+# This only stores links for one lecture
 class Link(models.Model):
     link = models.CharField(null=True, max_length=100)

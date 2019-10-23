@@ -24,16 +24,17 @@ def getLectures(request):
 
 def checkin(request):
     try:
-        userID = request.POST['id']
-        lectureID = request.POST['lectureID']
+        userID = request.GET['id']
+        lectureID = request.GET['lectureID']
 
         user = User.objects.get(ID=userID)
         lecture = Lecture.objects.get(ID=lectureID)
 
         attendance = Attendance()
+        attendance.ID = int(str(userID) + str(lectureID))
         attendance.userID = user
         attendance.lectureID = lecture
-        attendance.save()
+        attendance.save(force_insert=True)
 
         response = {'status': True}
     except:
@@ -53,12 +54,12 @@ def askhelp(request):
             pictureRequest = PictureRequest()
             pictureRequest.userID = user
             pictureRequest.status = 'available'
-            pictureRequest.save()
+            pictureRequest.save(force_insert=True)
 
         elif helpType == 'question':
             questionRequest = QuestionRequest()
             questionRequest.userID = user
-            questionRequest.save()
+            questionRequest.save(force_insert=True)
 
         else:
             response = {'status': False}
@@ -80,7 +81,7 @@ def upload(request):
             pictureRequest = PictureRequest.objects.get(userID=IDToBeHelped)
             pictureRequest.data = data
             pictureRequest.status = 'done'
-            pictureRequest.save()
+            pictureRequest.save(force_update=True)
 
         elif dataType == 'voice':
             user = User.objects.get(ID=userID)
@@ -88,7 +89,7 @@ def upload(request):
             questionRequest = QuestionRequest()
             questionRequest.userID = user
             questionRequest.data = data
-            questionRequest.save()
+            questionRequest.save(force_insert=True)
 
         else:
             response = {'status': False}
@@ -105,7 +106,7 @@ def help(request):
 
         if pictureRequest.status == 'available':
             pictureRequest.status = 'taken'
-            pictureRequest.save()
+            pictureRequest.save(force_update=True)
             response = {'status': True}
         else:
             response = {'status': False}
@@ -181,7 +182,7 @@ def selectAStudent(request):
             student = random.choice(students)
             chosenStudent = ChosenStudent()
             chosenStudent.userID = student.userID
-            chosenStudent.save()
+            chosenStudent.save(force_insert=True)
 
             response = {'status': True}
 
@@ -206,7 +207,7 @@ def register(request):
             user = User()
             user.username = username
             user.password = password
-            user.save()
+            user.save(force_insert=True)
 
             response = {'status': True}
     except:
