@@ -1,6 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+function chooseastudent()
+{
+    var request = new XMLHttpRequest();
+    var url = "/webapp/selectastudent/"
+    var lectureID = 1
+
+    request.open("POST", url, true)
+    request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    request.onreadystatechange = function () {
+
+        if (request.readyState === 4 && request.status === 200) {
+            var json = JSON.parse(request.responseText);
+            
+            if (json.status == true)
+                alert("A student has been chosen");
+            else
+                alert("Failed to choose a student");
+        }
+    };
+    var data = "lectureID=" + lectureID;
+    request.send(data);
+}
+
+function webcheck()
+{
+    var lectureID = "1"
+
+    var request = new XMLHttpRequest();
+    var url = "/webapp/webcheck/"
+
+    request.open("POST", url, true)
+    request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    request.onreadystatechange = function () {
+
+        if (request.readyState === 4 && request.status === 200) {
+            var json = JSON.parse(request.responseText);
+
+            if (json.status == true)
+                alert(request.responseText);
+        }
+    };
+    var data = "lectureID=" + lectureID;
+    request.send(data);
+}
+
+function pushLink()
+{
+    var lectureID = "1"
+
+    var request = new XMLHttpRequest();
+    var url = "/webapp/pushLink/"
+
+    request.open("POST", url, true)
+    request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    request.onreadystatechange = function () {
+
+        if (request.readyState === 4 && request.status === 200) {
+            var json = JSON.parse(request.responseText);
+
+            if (json.status == true)
+                alert("The link has been pushed to all students in the lecture");
+            else
+                alert("Failed to push the link to all students in the lecture");
+        }
+    };
+    var data = "lectureID=" + lectureID;
+    request.send(data);
+}
+
+timer = setInterval(webcheck , 3000);
+
+</script>
 <script type="text/javascript">
 function geoFindMe() {
   var output = document.getElementById("out");
@@ -75,7 +148,7 @@ function geoFindMe() {
 
                             <div class="header-bar-menu">
                                 <ul class="flex justify-content-center align-items-center py-2 pt-md-0">
-                                    <button class="btn btn-info" onclick="{location.href='/webapp/attendance'}">Get Attendance</button>
+                                    <li><a href="login">Logout</a></li>
                                 </ul>
                             </div><!-- .header-bar-menu -->
                         </div><!-- .col -->
@@ -96,9 +169,11 @@ function geoFindMe() {
                             <nav class="site-navigation flex justify-content-end align-items-center">
                                 <ul class="flex flex-column flex-lg-row justify-content-lg-end align-content-center">
                                     <li class="current-menu-item"><a href="index">Home</a></li>
-                                    <li><a href="#">About</a></li>
-                                    <li><a href="#">Courses</a></li>
-                                    <li><a href="#">Contact</a></li>
+                                    <li><button class="btn btn-info" onclick="{location.href='/webapp/attendance'}">Get Attendance</button></li>
+                                    <li><a href="#"> </a></li>
+                                    <li><button type="button" onclick="chooseastudent()" class="find-me btn btn-info">Choose a student</button></li>
+                                    <li><a href="#"> </a></li>
+                                    <li><button type="button" onclick="pushLink()" class="find-me btn btn-info">Push the link</button></li>
                                 </ul>
 
                                 <div class="hamburger-menu d-lg-none">
@@ -143,19 +218,19 @@ function geoFindMe() {
                                     <div style="color:white">{{message}}</div>
                                     <div>
                                         <h4>Latitude</h4>
-                                        <input type="latitude" name="latitude">
+                                        <input type="text" name="latitude">
                                     </div><br/>
                                     <div>
                                         <h4>Longitude</h4>
-                                        <input type="longitude" name="longitude">
+                                        <input type="text" name="longitude">
                                     </div><br/>
                                     <div>
                                         <h4>Date&Time</h4>
-                                        <input type="dateTime" name="dateTime">
+                                        <input type="text" name="dateTime">
                                     </div><br/>
                                     <div>
                                         <h4>link</h4>
-                                        <input type="link" name="link">
+                                        <input type="text" name="link">
                                     </div><br/>
                                     <button class="btn btn-default" type="submit">create</button>
                                 </form>
