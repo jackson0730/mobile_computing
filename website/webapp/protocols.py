@@ -24,8 +24,8 @@ def getLectures(request):
 
 def checkin(request):
     try:
-        userID = request.GET['id']
-        lectureID = request.GET['lectureID']
+        userID = request.POST['id']
+        lectureID = request.POST['lectureID']
 
         user = User.objects.get(ID=userID)
         lecture = Lecture.objects.get(ID=lectureID)
