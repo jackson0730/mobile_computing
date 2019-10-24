@@ -35,7 +35,6 @@ public class NetWorkHelper {
 
     private static NetWorkHelper instance;
 
-    //private static String host = "http://132.232.102.154:5000"; // "http://43.240.97.56:8000";
     private static String host = "http://43.240.97.26:8000/webapp";
 
     // private construct
@@ -102,6 +101,7 @@ public class NetWorkHelper {
         OkHttpClient client = new OkHttpClient();// create client
         FormBody.Builder formBody = new FormBody.Builder();// build arguments
         formBody.add("id",StatusUtil.idNumber);// set userid
+        formBody.add("lectureID","1"); // set userid
         String url = host + "/check/";
         Request request = new Request.Builder()// create Request
                 .url(url)
@@ -116,6 +116,10 @@ public class NetWorkHelper {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 JSONObject jsonObject = parseJsonWithJsonObject(response);
+                /*if (jsonObject != null){
+                    Log.e("response",jsonObject.toString());
+                }
+                 */
                 if(jsonObject != null && getJsonVal(jsonObject, "status").equals("true")){
                     String type = getJsonVal(jsonObject, "type");
                     String data = getJsonVal(jsonObject, "data");
@@ -135,8 +139,7 @@ public class NetWorkHelper {
                         handler.sendMessage(message);
                     }
                 }else{
-                    //ToastUtils.show(context, "operation failed");
-                    if(jsonObject == null) {
+                    if(jsonObject == null){
                         ToastUtils.show(context, "no response from server");
                     }
                 }
@@ -154,20 +157,13 @@ public class NetWorkHelper {
             byte[] buffer = new byte[(int)file.length()];
             inputStream.read(buffer);
             inputStream.close();
-            /*
-            byte[] buffer = new byte[(int)file.length()];
-            DataInputStream inputStream = new DataInputStream(new FileInputStream(file));
-            inputStream.readFully(buffer);
-            inputStream.close();
-             */
             encodeString = Base64.encodeToString(buffer, Base64.DEFAULT);
-            Log.e("string_encoded", encodeString);
-
+            Log.e("buffer", buffer.length+"");
+            Log.e("encode string", encodeString);
         }catch (Exception e){
             ToastUtils.show(context, "upload file not exist");
             e.printStackTrace();
         }
-
         OkHttpClient client = new OkHttpClient();// create client
         FormBody.Builder formBody = new FormBody.Builder();// build arguments
         formBody.add("id",StatusUtil.idNumber);// set useridarguments
@@ -184,7 +180,7 @@ public class NetWorkHelper {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                ToastUtils.show(context, "upload file failed");
+                ToastUtils.show(context, "network failed");
             }
 
             @Override
@@ -193,13 +189,10 @@ public class NetWorkHelper {
                 JSONObject jsonObject = parseJsonWithJsonObject(response);
                 if(jsonObject != null && getJsonVal(jsonObject, "status").equals("true")){
                     ToastUtils.show(context, "upload successfully");
-                }else{
-                    if(jsonObject == null)
-                        ToastUtils.show(context, "no response from server");
-                    else
-                        ToastUtils.show(context, "upload failed");
-
-                }
+                }else if (jsonObject != null && getJsonVal(jsonObject, "status").equals("false")){
+                    ToastUtils.show(context, "upload failed");
+                }else
+                    ToastUtils.show(context, "no response");
 
             }
         });
