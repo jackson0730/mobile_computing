@@ -1,6 +1,6 @@
 from django.http import JsonResponse, HttpResponse
 from .models import *
-import random
+import random, base64
 
 def getLectures(request):
     lectures = Lecture.objects.all()
@@ -204,22 +204,37 @@ def check(request):
 
 def webcheck(request):
     lectureID = request.POST['lectureID']
-
     questions = QuestionRequest.objects.filter(lectureID=lectureID)
 
     if questions.exists():
         question = questions[0]
-        response = {
-            'status': True,
-            'userID': question.userID.ID,
-            'data': question.data
-        }
+
+        if question.data is None:
+            response = {
+                'status': True,
+                'userID': question.userID.ID,
+                'type': 'question'
+            }
+
+        else:
+            saveRecording(question.data)
+            response = {
+                'status': True,
+                'userID': question.userID.ID,
+                'type': 'recording'
+            }
+
         question.delete()
 
     else:
         response = {'status': False}
 
     return JsonResponse(response)
+
+def saveRecording(data):
+    wav = base64.b64decode(data.encode())
+    with open('webapp/static/recording.wav', 'wb') as file:
+        file.write(wav)
 
 def pushLink(request):
     try:

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+{% load static %}
 <script>
 function chooseastudent()
 {
@@ -39,8 +41,14 @@ function webcheck()
         if (request.readyState === 4 && request.status === 200) {
             var json = JSON.parse(request.responseText);
 
-            if (json.status == true)
-                alert(request.responseText);
+            if (json.status == true) {
+                if (json.type === "question")
+                    showPopupWindow(document.getElementById('popup_notification'));
+                else
+                    showPopupWindow(document.getElementById('popup_recording_player'));
+
+                clearInterval(timer);
+            }
         }
     };
     var data = "lectureID=" + lectureID;
@@ -71,9 +79,84 @@ function pushLink()
     request.send(data);
 }
 
+function showPopupWindow(popup_page)
+{
+    popup_page.style.display = "inline-block";
+
+}
+
+function hidePopupWindow(popup_page)
+{
+    popup_page.style.display = "none";
+
+}
+
+function cancel(popup_page)
+{
+    hidePopupWindow(popup_page);
+    timer = setInterval(webcheck , 3000);
+}
+
 timer = setInterval(webcheck , 3000);
 
 </script>
+
+<style type="text/css">
+    .popup_page {
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        background-color: black;
+        background: rgba(0, 0, 0, 0.6);
+        text-align: center;
+        z-index: 99;
+        display: none;
+    }
+
+    .popup_title_div {
+        height: 40px;
+        box-shadow: 0px 3px 7px #c0c0c0;
+        border-radius: 10px; 
+        background-color: #f3f3f3;
+    }
+
+    .popup_content_div {
+        height: calc(80% - 80px);
+        padding-top: 30px;
+    }
+
+    .popup_title_text {
+        position: absolute;
+        top: calc((40px - 20px) / 2);
+        left: calc((100% - 133px) / 2);
+    }
+
+    .popup_content_text {
+        font-size: 30px;
+        top: 40px;
+    }
+
+    .popup_window {
+        position: absolute;
+        height: 25%;
+        width: 35%;
+        top: 30%;
+        left: calc((100% - 35%) / 2);
+        border: 2px solid #f3f3f3;
+        border-radius: 10px; 
+        background-color: white;
+    }
+
+    .popup_window input {
+        margin-top: 30px;
+    }
+
+    video {
+        height: 56px;
+        width: 300px;
+    }
+</style>
+
 <script type="text/javascript">
 function geoFindMe() {
   var output = document.getElementById("out");
@@ -123,6 +206,37 @@ function geoFindMe() {
     <link rel="stylesheet" href="../static/style.css">
 </head>
 <body>
+    
+    <div class="popup_page" id="popup_notification">
+        <div class="popup_window">
+            <div class="popup_title_div">
+                <span class="popup_title_text">A New Notification</span>
+            </div>
+
+            <div class="popup_content_div">
+                <span class="popup_content_text">A student wants to ask questions</span>
+            </div>
+                    
+            <input type="button" value="Cancel" onclick="cancel(document.getElementById('popup_notification'))">
+         </div>
+    </div>
+    
+    <div class="popup_page" id="popup_recording_player">
+        <div class="popup_window">
+            <div class="popup_title_div">
+                <span class="popup_title_text">A New Recording</span>
+            </div>
+
+            <div class="popup_content_div">
+                <video controls name="media">
+                    <source src="{% static "recording.wav" %}" type="audio/x-wav">
+                </video>
+            </div>
+
+            <input type="button" value="Cancel" onclick="cancel(document.getElementById('popup_recording_player'))">
+         </div>
+    </div>
+    
     <div class="hero-content">
         <header class="site-header">
             <div class="top-header-bar">

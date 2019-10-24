@@ -6,6 +6,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
@@ -76,8 +80,13 @@ public class MainActivity extends AppCompatActivity {
     private String id;
     private JSONArray lectures;
     private JSONObject lecture;
+    private SensorManager sensorManager;
+    private boolean isShake = false;
+    private String result = "";
+    Sensor accelerometer;
 
     private Button pictureRequestButton;
+    private Button shakeRequestButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,7 +95,34 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        FloatingActionButton fab = findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        });
+
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        sensorManager.registerListener((SensorEventListener) this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+
+        // If shake request button is clicked, show shake request pop up
+
+        shakeRequestButton = findViewById(R.id.shakeRequest);
+        shakeRequestButton.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        shakeRequestPopUp();
+                    }
+                }
+        );
+
         // If picture request button is clicked, show picture request pop up
+
         pictureRequestButton = findViewById(R.id.pictureRequest);
         pictureRequestButton.setOnClickListener(
                 new View.OnClickListener() {
@@ -124,6 +160,7 @@ public class MainActivity extends AppCompatActivity {
         // check if there data for the user from the server
         CheckThread checkThread = new CheckThread(); // ADD ID OF USER
         checkThread.start();
+
     }
 
     @Override
@@ -464,6 +501,45 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+    /*
+     Pop up to request of shaking question
+     */
+    private void shakeRequestPopUp() {
+
+        if (!currentLectureID.equals("-1")) {
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle("Shake for question")
+                    .setMessage("Would you like to notify lecturer of your question?");
+
+            builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    if (isShake == true){
+                        sendShake("1","1"); //get it from login and lecture selection
+                    }
+                    else{
+                        Toast exitDiagToast = Toast.makeText(MainActivity.this,
+                                "You haven't shake your phone yet", Toast.LENGTH_LONG);
+                        exitDiagToast.show();
+                        dialogInterface.dismiss();
+
+                    }
+
+                }
+            });
+
+            builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    dialogInterface.dismiss();
+                }
+            });
+
+            AlertDialog dialog = builder.create();
+            dialog.show();
+        }
+    }
     /*
      Pop up to request a picture
      */
@@ -850,6 +926,87 @@ public class MainActivity extends AppCompatActivity {
         };
 
         queue.add(postRequest);
+    }
+
+    @Override
+    protected void onPause() {
+        // TODO Auto-generated method stub
+        super.onPause();
+        sensorManager.unregisterListener((SensorEventListener) this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        sensorManager.registerListener((SensorEventListener) this,
+                sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+                SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    protected void onSensorChanged(SensorEvent event) {
+        // TODO Auto-generated method stub
+
+        int sensorType = event.sensor.getType();
+        // values[0]:X，values[1]：Y，values[2]：Z
+        float[] values = event.values;
+        //Log.d(TAG, "onSensorChanged: X:" + Math.abs(values[0]) + " Y: " + Math.abs(values[1]) + " Z: " + Math.abs(values[2]));
+        if (sensorType == Sensor.TYPE_ACCELEROMETER) {
+            float x = Math.abs(values[0]);
+            float y = Math.abs(values[1]);
+            float z = Math.abs(values[2]);
+            if (x > 15 || y > 15 || z > 15){
+                isShake = true;
+                Toast.makeText(this, "You are shaking your phone", Toast.LENGTH_SHORT).show();
+
+            }
+        }
+    }
+
+    protected void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // TODO Auto-generated method stub
+
+    }
+
+    // Send shaking notification to lecturer side webapp
+
+    private void sendShake(String user, String lecture){
+        final String userId = user;
+        final String type = "question";
+        final String lectureID = lecture;
+        final String URLline = "http://43.240.97.26:8000/webapp/askhelp/";
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, URLline,
+                new Response.Listener<String>(){
+                    @Override
+                    public void onResponse(String response) {
+                        Toast.makeText(MainActivity.this, "Request has been received!", Toast.LENGTH_LONG).show();
+
+                    }
+                },
+                new Response.ErrorListener(){
+                    @Override
+                    public void onErrorResponse(VolleyError error){
+                        Toast.makeText(MainActivity.this, "Can't send request to ask question",Toast.LENGTH_LONG).show();
+                        error.printStackTrace();
+                    }
+                }){
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Content-Type", "application/x-www-form-urlencoded");
+                return headers;
+            }
+
+            @Override
+            public Map<String, String> getParams(){
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("id", userId);
+                params.put("type", type);
+                params.put("lectureID", lectureID);
+                return params;
+            }
+        };
+        RequestQueue requestQueue = Volley.newRequestQueue(this);
+        requestQueue.add(stringRequest);
     }
 
 }
