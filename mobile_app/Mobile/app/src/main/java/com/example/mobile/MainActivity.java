@@ -117,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
             l.put("lectureID", 1);
             l.put("latitude", "30.50");
             l.put("longitude", "100.50");
-            l.put("dateTime", "2019-10-24T01:00:00Z");
+            l.put("dateTime", "2019-10-24T15:30:00Z");
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -734,6 +734,9 @@ public class MainActivity extends AppCompatActivity {
             }
             bytes = output.toByteArray();
             String encodedString = Base64.encodeToString(bytes, Base64.DEFAULT);
+
+            File image = new File(filePath);
+            image.delete();
 
             return encodedString;
 
