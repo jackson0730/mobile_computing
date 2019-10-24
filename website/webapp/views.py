@@ -59,11 +59,11 @@ def account(request):
 		link = request.POST.get('link')
 		if latitude and longitude and dateTime:
 			message="Lecture added successful, you can see the students' attendance now."
-			new_lecture = Lecture.objects.create()
+			new_lecture = Lecture()
 			new_lecture.latitude=latitude
 			new_lecture.longitude=longitude
 			new_lecture.dateTime=dateTime
-			new_lecture.link=link
+			new_lecture.alink=link
 			new_lecture.save()
 			return redirect('/webapp/attendance')
 												#add argument''', lectureID=new_lecture.lectureID '''
