@@ -78,6 +78,3 @@ def attendance(request):
 		# or change to lectureID = lectureID
 		attendances = Attendance.objects.filter(lectureID=lectureID)
 		return render(request,'attendance.html',{'attendances':attendances})
-
-def chooseastudent(request):
-	return render(request,'chooseastudent.html')
