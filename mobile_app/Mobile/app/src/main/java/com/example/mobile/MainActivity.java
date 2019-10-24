@@ -62,7 +62,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
     private static final int ALL_PERMISSIONS_CODE = 1;
     private static final int REQUEST_IMAGE_CAPTURE = 100;
@@ -107,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        sensorManager.registerListener((SensorEventListener) this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
 
         // If shake request button is clicked, show shake request pop up
 
@@ -506,8 +506,6 @@ public class MainActivity extends AppCompatActivity {
      */
     private void shakeRequestPopUp() {
 
-        if (!currentLectureID.equals("-1")) {
-
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
             builder.setTitle("Shake for question")
                     .setMessage("Would you like to notify lecturer of your question?");
@@ -517,6 +515,9 @@ public class MainActivity extends AppCompatActivity {
                 public void onClick(DialogInterface dialogInterface, int i) {
                     if (isShake == true){
                         sendShake("1","1"); //get it from login and lecture selection
+                        Toast DiagToast = Toast.makeText(MainActivity.this,
+                                "Your request have been sent", Toast.LENGTH_LONG);
+                        DiagToast.show();
                     }
                     else{
                         Toast exitDiagToast = Toast.makeText(MainActivity.this,
@@ -539,7 +540,7 @@ public class MainActivity extends AppCompatActivity {
             AlertDialog dialog = builder.create();
             dialog.show();
         }
-    }
+
     /*
      Pop up to request a picture
      */
@@ -932,18 +933,18 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         // TODO Auto-generated method stub
         super.onPause();
-        sensorManager.unregisterListener((SensorEventListener) this);
+        sensorManager.unregisterListener(this);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        sensorManager.registerListener((SensorEventListener) this,
+        sensorManager.registerListener(this,
                 sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
                 SensorManager.SENSOR_DELAY_NORMAL);
     }
 
-    protected void onSensorChanged(SensorEvent event) {
+    public void onSensorChanged(SensorEvent event) {
         // TODO Auto-generated method stub
 
         int sensorType = event.sensor.getType();
@@ -962,7 +963,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    protected void onAccuracyChanged(Sensor sensor, int accuracy) {
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
         // TODO Auto-generated method stub
 
     }
