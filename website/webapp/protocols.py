@@ -232,7 +232,7 @@ def webcheck(request):
     return JsonResponse(response)
 
 def saveRecording(data):
-    wav = base64.b64decode(data)
+    wav = base64.b64decode(data.encode())
     with open('webapp/static/recording.wav', 'wb') as file:
         file.write(wav)
 
