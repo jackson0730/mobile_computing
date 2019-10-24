@@ -1,4 +1,4 @@
-package com.mobile.soundappp;
+package com.example.mobile;
 
 import android.Manifest;
 import android.animation.Animator;
