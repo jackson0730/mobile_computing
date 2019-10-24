@@ -95,15 +95,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -512,7 +503,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        Log.d("checklocation", "location is incorrect");
         return false;
     }
 
