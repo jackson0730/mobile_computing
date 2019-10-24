@@ -138,19 +138,11 @@ public class MainActivity extends AppCompatActivity {
         queue = Volley.newRequestQueue(this);
         currentLectureID = "-1";
         id = "1"; // GET THIS FROM LOGIN
-        lectures = new JSONArray(); // GET THIS FROM GETLECTURES
-        JSONObject l = new JSONObject();
-        try {
-            l.put("lectureID", 1);
-            l.put("latitude", "30.50");
-            l.put("longitude", "100.50");
-            l.put("dateTime", "2019-10-24T15:30:00Z");
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        lectures.put(l);
 
-        // Get permissions
+        // get lectures from server
+        getLectures();
+
+        // get permissions
         getPermissions();
 
         // checks location periodically and sends "checkin"
@@ -255,6 +247,55 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         return false;
+    }
+
+    /*
+    send a request to get lectures
+     */
+
+    private void getLectures() {
+
+        String url = "http://43.240.97.26:8000/webapp/getLectures/";
+
+        StringRequest postRequest = new StringRequest
+                (Request.Method.POST, url, new Response.Listener<String>() {
+
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            JSONObject resp = new JSONObject(response);
+                            if (resp.getString("status").equals("true")) {
+                                Log.d("checkgetlectures", "received lectures");
+
+                                try {
+                                    lectures = resp.getJSONArray("lectures");
+                                    Log.d("checkgetlectures", lectures.toString());
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }, new Response.ErrorListener() {
+
+                    @Override
+                    public void onErrorResponse(VolleyError e) {
+                        Log.d("checkgetlectures", "can't get lectures from server");
+                    }
+                })
+        {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String>  headers = new HashMap<String, String>();
+                headers.put("Content-Type", "application/x-www-form-urlencoded");
+
+                return headers;
+            }
+        };
+
+        queue.add(postRequest);
     }
 
     /*
