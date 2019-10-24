@@ -44,9 +44,9 @@ def checkin(request):
 
 def askhelp(request):
     try:
-        userID = request.GET['id']
-        helpType = request.GET['type']
-        lectureID = request.GET['lectureID']
+        userID = request.POST['id']
+        helpType = request.POST['type']
+        lectureID = request.POST['lectureID']
         response = {'status': True}
         
         user = User.objects.get(ID=userID)
