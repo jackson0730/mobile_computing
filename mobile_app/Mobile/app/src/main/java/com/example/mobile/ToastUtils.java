@@ -1,4 +1,4 @@
-package com.mobile.soundappp;
+package com.example.mobile;;
 
 
 import android.content.Context;
