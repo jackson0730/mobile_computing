@@ -1,4 +1,4 @@
-package com.mobile.soundappp;
+package com.example.mobile;
 
 import android.app.Application;
 import android.content.Context;
@@ -123,7 +123,8 @@ public class NetWorkHelper {
                 if(jsonObject != null && getJsonVal(jsonObject, "status").equals("true")){
                     String type = getJsonVal(jsonObject, "type");
                     String data = getJsonVal(jsonObject, "data");
-                    data = new String(Base64.decode(data.getBytes(), Base64.DEFAULT));
+
+                    // data = new String(Base64.decode(data.getBytes(), Base64.DEFAULT));
                     //use Handler to control message
                     Log.e("net", type + " " + data);
                     Message message = null;

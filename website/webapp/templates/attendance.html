@@ -102,14 +102,6 @@
                             <header class="entry-header">
                                 <h1>Get Attendance List for today</h1>
                             </header>
-                            <div>
-                                {% for attendance in attendances %}
-                                <tr>
-                                    <td>{{attendance.userID}}</td>
-                                    <td>{{attendance.lectureID}}</td>
-                                </tr>
-                                {% endfor %}
-                            </div>
 
                             <div class="entry-content">
                                 <br/>
@@ -120,7 +112,32 @@
                                     </div><br/>
                                     <button class="btn btn-default" type="submit">Get Attendance</button>
                                 </form>
+                                
                             </div>
+                            <br>
+                            <div>
+                                <table style="color: white">
+                                    <thead>
+                                        <tr>
+                                            <th>user ID</th>
+                                            <th>user Name</th>
+                                            <th>lecture ID</th>
+
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for attendance in attendances %}
+                                    <tr>
+                                        <td>{{ attendance.userID.ID }}</td>
+                                        <td>{{ attendance.userID.username }}</td>
+                                        <td>{{ attendance.lectureID.ID }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+
 
                         </div><!-- .hero-content-wrap -->
                     </div><!-- .col -->
