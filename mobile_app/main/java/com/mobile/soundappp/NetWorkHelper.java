@@ -14,6 +14,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +34,9 @@ import okhttp3.ResponseBody;
 public class NetWorkHelper {
 
     private static NetWorkHelper instance;
-    private static String host = "http://43.240.97.26:8000/webapp/";
+
+    //private static String host = "http://132.232.102.154:5000"; // "http://43.240.97.56:8000";
+    private static String host = "http://43.240.97.26:8000/webapp";
 
     // private construct
     private NetWorkHelper() {
@@ -63,7 +67,7 @@ public class NetWorkHelper {
         FormBody.Builder formBody = new FormBody.Builder();// build arguments
         formBody.add("username",userName);// set username
         formBody.add("password",password);// set password
-        String url = host + (login?"login/":"register/");
+        String url = host + (login?"/login/":"/register/");
         Request request = new Request.Builder()// create Request
                 .url(url)
                 .post(formBody.build())// paste body
@@ -78,7 +82,7 @@ public class NetWorkHelper {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                Log.e("net", "onResponse");
+                Log.e("net", "onResponse" + response.toString());
                 JSONObject jsonObject = parseJsonWithJsonObject(response);
                 if(jsonObject != null && getJsonVal(jsonObject, "status").equals("true")){
                     if(login){
@@ -89,11 +93,6 @@ public class NetWorkHelper {
                     }
                 }else{
                     ToastUtils.show(context, "operation failed");
-                    if(jsonObject != null){
-                        Log.e("net", getJsonVal(jsonObject, "status"));
-                    }else{
-                        Log.e("net", "Response is null");
-                    }
                 }
             }
         });// use okhttp to send request
@@ -103,7 +102,7 @@ public class NetWorkHelper {
         OkHttpClient client = new OkHttpClient();// create client
         FormBody.Builder formBody = new FormBody.Builder();// build arguments
         formBody.add("id",StatusUtil.idNumber);// set userid
-        String url = host + "check/";
+        String url = host + "/check/";
         Request request = new Request.Builder()// create Request
                 .url(url)
                 .post(formBody.build())// paste body
@@ -137,8 +136,8 @@ public class NetWorkHelper {
                     }
                 }else{
                     //ToastUtils.show(context, "operation failed");
-                    if(jsonObject == null ){
-                        Log.e("check", "Response is nothing");
+                    if(jsonObject == null) {
+                        ToastUtils.show(context, "no response from server");
                     }
                 }
             }
@@ -147,27 +146,63 @@ public class NetWorkHelper {
 
     /**
      * @param file  file
-     * @return      response
-     * @throws IOException
      */
-    public ResponseBody upload(File file) throws IOException {
-        OkHttpClient client = new OkHttpClient();
-        RequestBody requestBody = new MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart("file", file.getName(),
-                        RequestBody.create(MediaType.parse("multipart/form-data"), file))
-                .build();
-        String url = host + "upload/";
-        Request request = new Request.Builder()
-                .header("Authorization", "ClientID" + UUID.randomUUID())
+    public void upload(final Context context, File file) throws IOException {
+        String encodeString = "";
+        try{
+            FileInputStream inputStream = new FileInputStream(file);
+            byte[] buffer = new byte[(int)file.length()];
+            inputStream.read(buffer);
+            inputStream.close();
+            /*
+            byte[] buffer = new byte[(int)file.length()];
+            DataInputStream inputStream = new DataInputStream(new FileInputStream(file));
+            inputStream.readFully(buffer);
+            inputStream.close();
+             */
+            encodeString = Base64.encodeToString(buffer, Base64.DEFAULT);
+            Log.e("string_encoded", encodeString);
+
+        }catch (Exception e){
+            ToastUtils.show(context, "upload file not exist");
+            e.printStackTrace();
+        }
+
+        OkHttpClient client = new OkHttpClient();// create client
+        FormBody.Builder formBody = new FormBody.Builder();// build arguments
+        formBody.add("id",StatusUtil.idNumber);// set useridarguments
+        formBody.add("lectureID", "1");// set userid
+        formBody.add("ID_to_be_helped","");
+        formBody.add("type","voice");// set userid
+        formBody.add("data",encodeString);// set userid
+        String url = host + "/upload/";
+        Request request = new Request.Builder()// create Request
+                .header("Content-type", "application/x-www-form-urlencode")
                 .url(url)
-                .post(requestBody)
+                .post(formBody.build())// paste body
                 .build();
-        Log.e("upload", url);
-        Response response = client.newCall(request).execute();
-        if (!response.isSuccessful())
-            throw new IOException("Unexpected code " + response);
-        return response.body();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                ToastUtils.show(context, "upload file failed");
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                Log.e("net", "onResponse" + response.toString());
+                JSONObject jsonObject = parseJsonWithJsonObject(response);
+                if(jsonObject != null && getJsonVal(jsonObject, "status").equals("true")){
+                    ToastUtils.show(context, "upload successfully");
+                }else{
+                    if(jsonObject == null)
+                        ToastUtils.show(context, "no response from server");
+                    else
+                        ToastUtils.show(context, "upload failed");
+
+                }
+
+            }
+        });
     }
 
     private JSONObject parseJsonWithJsonObject(Response response) throws IOException {

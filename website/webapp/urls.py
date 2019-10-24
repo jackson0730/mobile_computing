@@ -13,7 +13,6 @@ urlpatterns = [
     path('webcheck/', protocols.webcheck, name='webcheck'),
     path('pushLink/', protocols.pushLink, name='pushLink'),
     path('selectastudent/', protocols.selectAStudent, name='selectAStudent'),
-    path('chooseastudent',views.chooseastudent),
 
     
     # Please do not change 'index' to 'index/'
