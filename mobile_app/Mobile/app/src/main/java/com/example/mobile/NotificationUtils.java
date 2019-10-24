@@ -1,4 +1,4 @@
-package com.mobile.soundappp;
+package com.example.mobile;
 
 import android.annotation.TargetApi;
 import android.app.NotificationChannel;
