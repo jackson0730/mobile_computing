@@ -1,6 +1,4 @@
 package com.mobile.soundappp;
-//package com.example.mobile;
-
 
 import android.annotation.SuppressLint;
 import android.content.Intent;

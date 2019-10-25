@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">LectureInteraction</string>
+    <string name="app_name">soundappp</string>
 
     <!-- Strings related to login -->
     <string name="prompt_email">UserName</string>
