@@ -89,6 +89,8 @@ public class NetWorkHelper {
                         StatusUtil.idNumber = id;
                         Intent intent = new Intent(context, MainActivity.class);
                         context.startActivity(intent);
+                    }else{
+                        ToastUtils.show(context, "register successfully, now please sign in");
                     }
                 }else{
                     ToastUtils.show(context, "operation failed");
