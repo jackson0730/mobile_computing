@@ -421,13 +421,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                                     break;
 
                                                 case "answer_question":
-                                                    String answer = resp.getString("data");
-                                                    message = handler.obtainMessage(1, answer);
+                                                    message = handler.obtainMessage(1, data);
                                                     break;
 
                                                 case "link":
-                                                    String link = resp.getString("data");
-                                                    message = handler.obtainMessage(2, link);
+                                                    message = handler.obtainMessage(2, data);
                                                     break;
                                             }
                                         }
