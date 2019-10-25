@@ -618,6 +618,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             JSONObject resp = new JSONObject(response);
                             if (resp.getString("status").equals("true")) {
                                 Log.d("checkpicturerequest", "request for a picture has been sent");
+                                Toast toast = Toast.makeText(MainActivity.this,
+                                        "Your request for a picture has been sent", Toast.LENGTH_LONG);
+                                toast.show();
                             }
                         } catch (JSONException e) {
                             e.printStackTrace();
@@ -775,6 +778,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                 JSONObject resp = new JSONObject(response);
                                 if (resp.getString("status").equals("true")) {
                                     Log.d("checksentphoto", "photo has been sent to the server");
+                                    Toast toast = Toast.makeText(MainActivity.this,
+                                            "Your picture has been sent", Toast.LENGTH_LONG);
+                                    toast.show();
                                 }
                             } catch (JSONException e) {
                                 e.printStackTrace();
@@ -896,6 +902,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
             fos.write(decodedString);
             fos.close();
+            Toast toast = Toast.makeText(MainActivity.this,
+                    "The picture has been saved", Toast.LENGTH_LONG);
+            toast.show();
         }
         catch (java.io.IOException e) {
             e.printStackTrace();
